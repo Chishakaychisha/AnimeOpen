@@ -100,7 +100,26 @@ contextBridge.exposeInMainWorld('api', {
   // External Links & Clipboard
   openExternalUrl: (url) => ipcRenderer.invoke('shell:open-external', url),
   copyToClipboard: (text) => ipcRenderer.invoke('clipboard:write-text', text),
-  startTorrent: (torrentInput) => ipcRenderer.invoke('torrent:start', torrentInput)
+  startTorrent: (torrentInput) => ipcRenderer.invoke('torrent:start', torrentInput),
+
+  // Local Area Network (LAN) Peer Sharing
+  lanGetStatus: () => ipcRenderer.invoke('lan:get-status'),
+  lanSetEnabled: (enable) => ipcRenderer.invoke('lan:set-enabled', enable),
+  lanSetDeviceName: (name) => ipcRenderer.invoke('lan:set-device-name', name),
+  lanUpdateLibrary: (animeList) => ipcRenderer.invoke('lan:update-library', animeList),
+  lanFetchPeerLibrary: (params) => ipcRenderer.invoke('lan:fetch-peer-library', params),
+  lanDownloadEpisode: (options) => ipcRenderer.invoke('lan:download-episode', options),
+  lanCancelDownload: (id) => ipcRenderer.invoke('lan:cancel-download', id),
+  lanConnectManual: (params) => ipcRenderer.invoke('lan:connect-manual', params),
+  onLanPeersChanged: (callback) => {
+    ipcRenderer.on('lan:peers-changed', (event, data) => callback(data));
+  },
+  onLanDownloadProgress: (callback) => {
+    ipcRenderer.on('lan:download-progress', (event, data) => callback(data));
+  },
+  onLanDownloadCompleted: (callback) => {
+    ipcRenderer.on('lan:download-completed', (event, data) => callback(data));
+  }
 });
 
 

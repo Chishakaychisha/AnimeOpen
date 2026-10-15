@@ -90,6 +90,15 @@
             Auto-Download (RSS)
           </button>
 
+          <!-- LAN Peer Sharing Button -->
+          <button class="btn-secondary btn-lan-nav" id="btnOpenLanModal" title="Share & stream anime with nearby friends on same Wi-Fi without internet">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98A16.88 16.88 0 0 0 12 4zm0 2.9c3.75 0 7.15 1.48 9.68 3.88L12 18.49 2.32 10.78A13.9 13.9 0 0 1 12 6.9z"/>
+            </svg>
+            <span>LAN Share</span>
+            <span class="lan-count-badge hidden" id="lanPeersBadge">0</span>
+          </button>
+
           <div class="sort-selector">
             <label for="sortSelect">Sort:</label>
             <select id="sortSelect">
@@ -565,6 +574,26 @@
           </small>
         </div>
 
+        <!-- Local Network (LAN) Peer Sharing Settings -->
+        <div class="setting-item">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+            <input type="checkbox" id="settingLanEnabled" checked style="width:18px;height:18px;accent-color:var(--accent-primary)" />
+            <span>Enable Local Network (LAN) Peer Sharing</span>
+          </label>
+          <small style="color:var(--text-muted);font-size:12px;margin-left:28px;display:block;margin-top:3px;">
+            Allows nearby friends on the same Wi-Fi / LAN to discover your anime collection and stream or download episodes without internet.
+          </small>
+        </div>
+
+        <div class="setting-item" id="settingLanDeviceNameBox">
+          <label>My Device Nickname (shown to friends on Wi-Fi)</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="settingLanDeviceName" placeholder="e.g. Chisha's PC" style="flex:1;padding:8px 12px;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-md);color:var(--text-main);" />
+            <button class="btn-secondary" id="btnSaveLanDeviceName">Save</button>
+          </div>
+          <small style="color:var(--text-muted);font-size:12px;" id="settingLanIpInfo">LAN IP: Detecting...</small>
+        </div>
+
         <div class="setting-item">
           <button class="btn-secondary" id="btnOpenUserGuideFromSettings" style="width:100%;justify-content:center;gap:8px;">
             📖 Open User Guide & Shortcuts
@@ -687,6 +716,102 @@
           <button class="btn-primary" id="btnApplyBatchRename">Rename All Files Now</button>
           <button class="btn-secondary" id="btnCancelBatchRename">Cancel</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Local Network (LAN) Peer Sharing Modal -->
+  <div class="modal-overlay hidden" id="lanModal">
+    <div class="modal-card lan-modal-card" style="max-width:860px">
+      <div class="modal-header">
+        <div class="lan-header-title">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="var(--accent-primary)">
+            <path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98A16.88 16.88 0 0 0 12 4zm0 2.9c3.75 0 7.15 1.48 9.68 3.88L12 18.49 2.32 10.78A13.9 13.9 0 0 1 12 6.9z"/>
+          </svg>
+          <h3>Nearby Friends (Local Wi-Fi / LAN)</h3>
+          <span class="lan-status-pill active" id="lanMyStatusPill">🟢 Active</span>
+        </div>
+        <button class="modal-close-btn" id="btnCloseLanModal" title="Close (Esc)">&times;</button>
+      </div>
+
+      <div class="modal-body lan-modal-body">
+        <!-- My Device Info Banner -->
+        <div class="lan-my-info-banner">
+          <div class="lan-my-info-main">
+            <div class="lan-pulse-dot"></div>
+            <div>
+              <div class="lan-my-name" id="lanMyNameDisplay">My PC</div>
+              <div class="lan-my-details" id="lanMyDetailsDisplay">LAN IP: Detecting... • 0 Series Shared</div>
+            </div>
+          </div>
+          <div class="lan-my-info-actions">
+            <button class="btn-secondary btn-sm" id="btnRefreshLanPeers" title="Scan for nearby computers">
+              🔄 Refresh Scan
+            </button>
+          </div>
+        </div>
+
+        <!-- Section 1: Nearby Peers List (Default View) -->
+        <div id="lanPeersListView">
+          <div class="lan-section-title">
+            <span>Nearby Devices on Wi-Fi</span>
+            <span class="lan-peers-count" id="lanPeersCountText">0 devices found</span>
+          </div>
+
+          <!-- Empty State (when no peers discovered yet) -->
+          <div class="lan-empty-state" id="lanPeersEmpty">
+            <div class="lan-radar-icon">
+              <div class="radar-wave wave-1"></div>
+              <div class="radar-wave wave-2"></div>
+              <div class="radar-wave wave-3"></div>
+              <svg viewBox="0 0 24 24" width="36" height="36" fill="var(--accent-primary)">
+                <path d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98A16.88 16.88 0 0 0 12 4zm0 2.9c3.75 0 7.15 1.48 9.68 3.88L12 18.49 2.32 10.78A13.9 13.9 0 0 1 12 6.9z"/>
+              </svg>
+            </div>
+            <h4>Searching for nearby friends...</h4>
+            <p>Anyone running AnimeOpen on the same Wi-Fi, Ethernet, or mobile hotspot will appear here automatically with zero internet needed.</p>
+            
+            <div class="lan-manual-connect-box">
+              <label>Connect to a friend's IP directly:</label>
+              <div class="lan-manual-row">
+                <input type="text" id="inputLanManualIp" placeholder="e.g. 192.168.1.45" />
+                <button class="btn-primary btn-sm" id="btnLanManualConnect">Connect</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Discovered Peers Grid -->
+          <div class="lan-peers-grid hidden" id="lanPeersGrid"></div>
+        </div>
+
+        <!-- Section 2: Browsing Peer's Anime Library -->
+        <div class="lan-peer-library-view hidden" id="lanPeerLibraryView">
+          <div class="lan-lib-nav-bar">
+            <button class="btn-secondary btn-sm" id="btnBackToPeers">
+              ← Back to Nearby Friends
+            </button>
+            <div class="lan-lib-title" id="lanBrowsingPeerTitle">Browsing Friend's Library</div>
+          </div>
+
+          <div class="lan-anime-grid" id="lanPeerAnimeGrid">
+            <!-- Populated dynamically with friend's anime cards -->
+          </div>
+        </div>
+
+        <!-- Section 3: Peer Anime Episodes Detail View -->
+        <div class="lan-peer-detail-view hidden" id="lanPeerDetailView">
+          <div class="lan-lib-nav-bar">
+            <button class="btn-secondary btn-sm" id="btnBackToPeerLib">
+              ← Back to Friend's Anime List
+            </button>
+            <div class="lan-lib-title" id="lanPeerDetailAnimeTitle">Anime Details</div>
+          </div>
+
+          <div class="lan-anime-detail-content" id="lanPeerDetailContent">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
       </div>
     </div>
   </div>

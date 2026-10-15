@@ -268,13 +268,14 @@ class AnimePlayer {
     this.container.classList.remove('hidden');
     document.body.classList.add('in-player');
 
-    // Get Media Stream URL via Electron protocol
-    const streamUrl = window.api.getMediaUrl(episode.filePath);
+    // Get Media Stream URL (supports direct LAN HTTP stream URL or local protocol)
+    const streamUrl = episode.streamUrl || window.api.getMediaUrl(episode.filePath);
     this.video.src = streamUrl;
     this.video.load();
 
     // Check saved progress
-    const history = this.app.store.watchHistory[episode.filePath];
+    const historyKey = episode.filePath || episode.streamUrl;
+    const history = this.app.store.watchHistory[historyKey];
     if (history && history.progress > 15 && !history.completed) {
       this.video.currentTime = history.progress;
       this.app.ui.showToast(`Resuming at ${this.formatTime(history.progress)}`);
@@ -284,17 +285,21 @@ class AnimePlayer {
     this.subtitleOffset = 0;
     this.video.querySelectorAll('track').forEach(t => t.remove());
 
-    // Auto-detect subtitles in the folder
-    window.api.findSubtitles(episode.filePath).then(subFiles => {
-      if (subFiles && subFiles.length > 0) {
-        subFiles.forEach((sub, idx) => {
-          this.addSubtitleTrack(sub.fileName, sub.content, idx === 0);
-        });
-        this.app.ui.showToast(`Found companion subtitle: ${subFiles[0].fileName}`);
-      } else {
-        this.buildTrackMenus();
-      }
-    });
+    // Auto-detect subtitles in the folder if local file
+    if (episode.filePath && window.api.findSubtitles) {
+      window.api.findSubtitles(episode.filePath).then(subFiles => {
+        if (subFiles && subFiles.length > 0) {
+          subFiles.forEach((sub, idx) => {
+            this.addSubtitleTrack(sub.fileName, sub.content, idx === 0);
+          });
+          this.app.ui.showToast(`Found companion subtitle: ${subFiles[0].fileName}`);
+        } else {
+          this.buildTrackMenus();
+        }
+      });
+    } else {
+      this.buildTrackMenus();
+    }
 
     // Reset AniSkip & fetch intervals
     this.skipIntervals = null;

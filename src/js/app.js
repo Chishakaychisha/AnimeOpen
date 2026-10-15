@@ -37,7 +37,19 @@ class AnimeApp {
     this.bindBatchRenameModal();
     this.bindUserGuide();
     this.bindRssModal();
+    this.bindLanSharing();
     this.inAppBrowser.init();
+
+    // Local Area Network (LAN) Peer Sharing listeners
+    if (window.api?.onLanPeersChanged) {
+      window.api.onLanPeersChanged((peers) => this.renderLanPeers(peers));
+    }
+    if (window.api?.onLanDownloadProgress) {
+      window.api.onLanDownloadProgress((data) => this.handleLanDownloadProgress(data));
+    }
+    if (window.api?.onLanDownloadCompleted) {
+      window.api.onLanDownloadCompleted((data) => this.handleLanDownloadCompleted(data));
+    }
 
     // Live Folder Watcher real-time listener
     if (window.api?.onLibraryFolderChanged) {
@@ -198,6 +210,35 @@ class AnimeApp {
         }
       });
     }
+
+    // Local Area Network (LAN) Peer Sharing Settings
+    const lanEnabledCheckbox = document.getElementById('settingLanEnabled');
+    const lanDeviceNameInput = document.getElementById('settingLanDeviceName');
+    const btnSaveLanDeviceName = document.getElementById('btnSaveLanDeviceName');
+    const lanIpInfo = document.getElementById('settingLanIpInfo');
+
+    if (window.api?.lanGetStatus) {
+      window.api.lanGetStatus().then(status => {
+        if (lanEnabledCheckbox) lanEnabledCheckbox.checked = !!status.enabled;
+        if (lanDeviceNameInput) lanDeviceNameInput.value = status.deviceName || '';
+        if (lanIpInfo) lanIpInfo.textContent = `LAN IP: ${status.myIp}:${status.httpPort}`;
+      }).catch(() => {});
+    }
+
+    lanEnabledCheckbox?.addEventListener('change', async () => {
+      const enable = lanEnabledCheckbox.checked;
+      const status = await window.api.lanSetEnabled(enable);
+      this.ui.showToast(enable ? '📶 LAN Sharing enabled on Wi-Fi' : 'LAN Sharing disabled');
+      this.updateLanUiStatus(status);
+    });
+
+    btnSaveLanDeviceName?.addEventListener('click', async () => {
+      const name = lanDeviceNameInput?.value.trim();
+      if (!name) return;
+      const status = await window.api.lanSetDeviceName(name);
+      this.ui.showToast(`Saved Wi-Fi device nickname: "${name}"`);
+      this.updateLanUiStatus(status);
+    });
   }
 
   bindRematchModal() {
@@ -330,11 +371,13 @@ class AnimeApp {
     // Initial render with titles immediately
     this.applyFilters();
     this.ui.showToast(`Found ${this.animeList.length} anime series. Fetching details...`);
+    if (window.api?.lanUpdateLibrary) window.api.lanUpdateLibrary(this.animeList);
 
     // Fetch AniList metadata in background
     await this.fetchMetadataForLibrary(forceRefreshMetadata);
 
     if (scanSpinner) scanSpinner.classList.add('hidden');
+    if (window.api?.lanUpdateLibrary) window.api.lanUpdateLibrary(this.animeList);
   }
 
   async fetchMetadataForLibrary(forceRefresh = false) {
@@ -1059,6 +1102,353 @@ class AnimeApp {
     } catch (err) {
       console.error('Error rendering RSS subs:', err);
     }
+  }
+
+  // ─── Local Area Network (LAN) Peer Sharing ────────────────────────────────
+
+  bindLanSharing() {
+    const openBtn = document.getElementById('btnOpenLanModal');
+    const modal = document.getElementById('lanModal');
+    const closeBtn = document.getElementById('btnCloseLanModal');
+    const refreshBtn = document.getElementById('btnRefreshLanPeers');
+    const manualInput = document.getElementById('inputLanManualIp');
+    const manualConnectBtn = document.getElementById('btnLanManualConnect');
+    const backToPeersBtn = document.getElementById('btnBackToPeers');
+    const backToPeerLibBtn = document.getElementById('btnBackToPeerLib');
+
+    if (!modal) return;
+
+    const closeModal = () => modal.classList.add('hidden');
+    const openModal = async () => {
+      modal.classList.remove('hidden');
+      this.showLanSection('peers');
+      await this.refreshLanStatus();
+    };
+
+    openBtn?.addEventListener('click', openModal);
+    closeBtn?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    refreshBtn?.addEventListener('click', async () => {
+      refreshBtn.disabled = true;
+      refreshBtn.textContent = '⏳ Scanning...';
+      await this.refreshLanStatus();
+      setTimeout(() => {
+        refreshBtn.disabled = false;
+        refreshBtn.textContent = '🔄 Refresh Scan';
+      }, 1000);
+    });
+
+    manualConnectBtn?.addEventListener('click', async () => {
+      const ip = manualInput?.value?.trim();
+      if (!ip) {
+        this.ui.showToast('Please enter an IP address');
+        manualInput?.focus();
+        return;
+      }
+      manualConnectBtn.disabled = true;
+      manualConnectBtn.textContent = 'Connecting...';
+      const res = await window.api.lanConnectManual({ ip, port: 58912 });
+      manualConnectBtn.disabled = false;
+      manualConnectBtn.textContent = 'Connect';
+      if (res && res.success) {
+        this.ui.showToast(`🟢 Connected to peer at ${ip}!`);
+        if (manualInput) manualInput.value = '';
+        await this.refreshLanStatus();
+      } else {
+        this.ui.showToast(`Could not connect to ${ip}: ${res?.error || 'No response'}`);
+      }
+    });
+
+    manualInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') manualConnectBtn?.click();
+    });
+
+    backToPeersBtn?.addEventListener('click', () => {
+      this.showLanSection('peers');
+    });
+
+    backToPeerLibBtn?.addEventListener('click', () => {
+      this.showLanSection('library');
+    });
+
+    // Initial status fetch on startup
+    this.refreshLanStatus();
+  }
+
+  showLanSection(section) {
+    const listView = document.getElementById('lanPeersListView');
+    const libView = document.getElementById('lanPeerLibraryView');
+    const detailView = document.getElementById('lanPeerDetailView');
+
+    listView?.classList.add('hidden');
+    libView?.classList.add('hidden');
+    detailView?.classList.add('hidden');
+
+    if (section === 'peers') listView?.classList.remove('hidden');
+    else if (section === 'library') libView?.classList.remove('hidden');
+    else if (section === 'detail') detailView?.classList.remove('hidden');
+  }
+
+  async refreshLanStatus() {
+    if (!window.api?.lanGetStatus) return;
+    try {
+      const status = await window.api.lanGetStatus();
+      this.updateLanUiStatus(status);
+      this.renderLanPeers(status.peers || []);
+    } catch (_) {}
+  }
+
+  updateLanUiStatus(status) {
+    if (!status) return;
+    const nameDisplay = document.getElementById('lanMyNameDisplay');
+    const detailsDisplay = document.getElementById('lanMyDetailsDisplay');
+    const statusPill = document.getElementById('lanMyStatusPill');
+
+    if (nameDisplay) nameDisplay.textContent = status.deviceName || 'My PC';
+    if (detailsDisplay) {
+      detailsDisplay.textContent = `LAN IP: ${status.myIp}:${status.httpPort} • ${this.animeList.length} Series Shared`;
+    }
+
+    if (statusPill) {
+      if (status.enabled) {
+        statusPill.className = 'lan-status-pill active';
+        statusPill.textContent = '🟢 Active on Wi-Fi';
+      } else {
+        statusPill.className = 'lan-status-pill';
+        statusPill.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+        statusPill.style.color = '#ef4444';
+        statusPill.textContent = '⚪ Disabled';
+      }
+    }
+  }
+
+  renderLanPeers(peers = []) {
+    const badge = document.getElementById('lanPeersBadge');
+    const countText = document.getElementById('lanPeersCountText');
+    const emptyEl = document.getElementById('lanPeersEmpty');
+    const gridEl = document.getElementById('lanPeersGrid');
+
+    if (badge) {
+      if (peers.length > 0) {
+        badge.textContent = peers.length;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    if (countText) {
+      countText.textContent = `${peers.length} ${peers.length === 1 ? 'device' : 'devices'} found`;
+    }
+
+    if (!gridEl) return;
+
+    if (peers.length === 0) {
+      emptyEl?.classList.remove('hidden');
+      gridEl.classList.add('hidden');
+      gridEl.innerHTML = '';
+      return;
+    }
+
+    emptyEl?.classList.add('hidden');
+    gridEl.classList.remove('hidden');
+    gridEl.innerHTML = '';
+
+    peers.forEach(peer => {
+      const card = document.createElement('div');
+      card.className = 'lan-peer-card';
+      card.innerHTML = `
+        <div class="lan-peer-card-top">
+          <div class="lan-peer-avatar">💻</div>
+          <div class="lan-peer-info">
+            <div class="lan-peer-name" title="${peer.name}">${peer.name}</div>
+            <div class="lan-peer-ip">${peer.ip}:${peer.port}</div>
+          </div>
+        </div>
+        <div class="lan-peer-stats">
+          <span class="lan-peer-stats-label">Shared Collection</span>
+          <span>📚 ${peer.animeCount || 0} Anime</span>
+        </div>
+        <button class="btn-primary btn-sm btn-browse-lan-peer" style="width:100%;justify-content:center;">
+          Browse Library
+        </button>
+      `;
+
+      card.querySelector('.btn-browse-lan-peer')?.addEventListener('click', () => {
+        this.openPeerLibrary(peer);
+      });
+
+      gridEl.appendChild(card);
+    });
+  }
+
+  async openPeerLibrary(peer) {
+    this.currentBrowsingPeer = peer;
+    this.showLanSection('library');
+
+    const titleEl = document.getElementById('lanBrowsingPeerTitle');
+    const gridEl = document.getElementById('lanPeerAnimeGrid');
+    if (titleEl) titleEl.textContent = `Browsing ${peer.name} (Loading...)`;
+    if (gridEl) gridEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">Fetching friend\'s anime collection...</div>';
+
+    const res = await window.api.lanFetchPeerLibrary({ ip: peer.ip, port: peer.port });
+    if (!res.success) {
+      if (gridEl) gridEl.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:#ef4444;">Failed to load library from ${peer.name}: ${res.error}</div>`;
+      return;
+    }
+
+    const animeList = res.anime || [];
+    if (titleEl) titleEl.textContent = `Browsing ${peer.name} (${animeList.length} Anime)`;
+    this.renderPeerLibrary(peer, animeList);
+  }
+
+  renderPeerLibrary(peer, animeList) {
+    const gridEl = document.getElementById('lanPeerAnimeGrid');
+    if (!gridEl) return;
+
+    if (animeList.length === 0) {
+      gridEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">No anime found in this friend\'s shared folder.</div>';
+      return;
+    }
+
+    gridEl.innerHTML = '';
+    animeList.forEach(anime => {
+      const card = document.createElement('div');
+      card.className = 'lan-anime-card';
+      const coverUrl = anime.cover || '';
+      card.innerHTML = `
+        <img class="lan-anime-cover" src="${coverUrl}" onerror="this.style.display='none'" alt="${anime.title}" />
+        <div class="lan-anime-info">
+          <div class="lan-anime-title" title="${anime.title}">${anime.title}</div>
+          <div class="lan-anime-meta">${anime.episodeCount || 0} episodes ${anime.score ? '• ★ ' + anime.score : ''}</div>
+        </div>
+      `;
+
+      card.addEventListener('click', () => {
+        this.openPeerAnimeDetail(peer, anime);
+      });
+
+      gridEl.appendChild(card);
+    });
+  }
+
+  openPeerAnimeDetail(peer, anime) {
+    this.showLanSection('detail');
+    const titleEl = document.getElementById('lanPeerDetailAnimeTitle');
+    const contentEl = document.getElementById('lanPeerDetailContent');
+    if (titleEl) titleEl.textContent = anime.title;
+    if (!contentEl) return;
+
+    const episodes = anime.episodes || [];
+
+    contentEl.innerHTML = `
+      <div class="lan-detail-header">
+        <img class="lan-detail-cover" src="${anime.cover || ''}" onerror="this.style.display='none'" alt="${anime.title}" />
+        <div class="lan-detail-info">
+          <div class="lan-detail-title">${anime.title}</div>
+          <div class="lan-detail-meta">
+            ${anime.year ? anime.year + ' • ' : ''}
+            ${anime.score ? '★ ' + anime.score + ' • ' : ''}
+            ${episodes.length} Episodes available on ${peer.name}
+          </div>
+          <div class="lan-detail-desc">${anime.description || 'No description available.'}</div>
+        </div>
+      </div>
+
+      <div class="lan-section-title" style="margin-top:16px;">Episodes</div>
+      <div class="lan-episodes-list" id="lanEpisodesListContainer"></div>
+    `;
+
+    const epListContainer = contentEl.querySelector('#lanEpisodesListContainer');
+    episodes.forEach(ep => {
+      const row = document.createElement('div');
+      row.className = 'lan-episode-row';
+      const sizeMB = ep.size ? (ep.size / (1024 * 1024)).toFixed(1) + ' MB' : '';
+
+      row.innerHTML = `
+        <div class="lan-ep-info">
+          <div class="lan-ep-title">${ep.displayTitle || ep.fileName}</div>
+          <div class="lan-ep-meta">${ep.fileName} ${sizeMB ? '• ' + sizeMB : ''}</div>
+        </div>
+        <div class="lan-ep-actions">
+          <button class="btn-lan-action btn-lan-stream" title="Watch directly from friend's PC over Wi-Fi without downloading">
+            ▶ Stream
+          </button>
+          <button class="btn-lan-action btn-lan-download" title="Download at high LAN speed straight into your anime folder">
+            ⬇ Download
+          </button>
+        </div>
+      `;
+
+      row.querySelector('.btn-lan-stream')?.addEventListener('click', () => {
+        this.streamLanEpisode(peer, anime, ep);
+      });
+
+      const dlBtn = row.querySelector('.btn-lan-download');
+      dlBtn?.addEventListener('click', () => {
+        this.downloadLanEpisode(peer, anime, ep, dlBtn);
+      });
+
+      epListContainer.appendChild(row);
+    });
+  }
+
+  streamLanEpisode(peer, anime, episode) {
+    document.getElementById('lanModal')?.classList.add('hidden');
+    this.ui.showToast(`▶ Streaming [${episode.displayTitle}] over LAN from ${peer.name}...`);
+
+    // Prepare episode object with LAN streamUrl
+    const lanEpisode = {
+      ...episode,
+      streamUrl: episode.streamUrl,
+      isLanStream: true
+    };
+
+    // Open video player directly
+    this.player.playEpisode(anime, lanEpisode);
+  }
+
+  async downloadLanEpisode(peer, anime, episode, btnEl) {
+    if (btnEl) {
+      btnEl.classList.add('downloading');
+      btnEl.textContent = '⏳ Downloading...';
+    }
+
+    this.ui.showToast(`⬇️ Starting LAN download of "${episode.fileName}" from ${peer.name}...`);
+
+    const res = await window.api.lanDownloadEpisode({
+      ip: peer.ip,
+      port: peer.port,
+      animeId: anime.id,
+      epIndex: episode.index,
+      animeTitle: anime.title,
+      fileName: episode.fileName,
+      totalBytes: episode.size
+    });
+
+    if (btnEl) {
+      btnEl.classList.remove('downloading');
+      btnEl.textContent = '⬇ Download';
+    }
+
+    if (res && res.success) {
+      this.ui.showToast(`✅ Downloaded "${episode.fileName}" to your library!`);
+      await this.scanLibrary(false);
+    } else {
+      this.ui.showToast(`⚠️ LAN Download error: ${res?.error || 'Failed'}`);
+    }
+  }
+
+  handleLanDownloadProgress(data) {
+    this.ui.showToast(`⬇️ LAN Transfer: ${data.fileName} (${data.percent}% at ${data.speedMBs})`);
+  }
+
+  handleLanDownloadCompleted(data) {
+    this.ui.showToast(`🎉 LAN Download complete: ${data.fileName}! Added to library.`);
+    this.scanLibrary(false);
   }
 }
 

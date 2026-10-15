@@ -20,6 +20,8 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow = null;
 let splashWindow = null;
+const LanService = require('./src/js/lanService');
+let lanService = null;
 const DATA_FILE = path.join(app.getPath('userData'), 'animeopen_store.json');
 
 // Helper to get stored user data
@@ -945,6 +947,17 @@ app.whenReady().then(() => {
   createSplashWindow();
   createWindow();
 
+  try {
+    lanService = new LanService({
+      mainWindow,
+      storeGetter: loadStore,
+      storeSetter: saveStore
+    });
+    lanService.start().catch(err => console.warn('Could not start LAN service:', err.message));
+  } catch (lanErr) {
+    console.warn('Could not initialize LAN service:', lanErr.message);
+  }
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
@@ -958,6 +971,9 @@ app.on('will-quit', () => {
   if (rssCheckInterval) clearInterval(rssCheckInterval);
   if (folderWatcher) {
     try { folderWatcher.close(); } catch (_) {}
+  }
+  if (lanService) {
+    try { lanService.stop(); } catch (_) {}
   }
 });
 
@@ -1571,5 +1587,41 @@ ipcMain.handle('subtitle:download-online', async (event, { url, filename, videoP
     return { success: false, error: err.message };
   }
 });
+
+// ─── Local Area Network (LAN) Peer Sharing IPC Handlers ──────────────────────
+
+ipcMain.handle('lan:get-status', () => {
+  return lanService ? lanService.getStatus() : { enabled: false, peers: [] };
+});
+
+ipcMain.handle('lan:set-enabled', async (event, enable) => {
+  return lanService ? await lanService.setEnabled(enable) : false;
+});
+
+ipcMain.handle('lan:set-device-name', (event, name) => {
+  return lanService ? lanService.setDeviceName(name) : false;
+});
+
+ipcMain.handle('lan:update-library', (event, animeList) => {
+  if (lanService) lanService.updateSharedLibrary(animeList);
+  return true;
+});
+
+ipcMain.handle('lan:fetch-peer-library', async (event, { ip, port }) => {
+  return lanService ? await lanService.fetchPeerLibrary(ip, port) : { success: false, error: 'LAN service inactive' };
+});
+
+ipcMain.handle('lan:download-episode', async (event, options) => {
+  return lanService ? await lanService.downloadEpisode(options) : { success: false, error: 'LAN service inactive' };
+});
+
+ipcMain.handle('lan:cancel-download', (event, id) => {
+  return lanService ? lanService.cancelDownload(id) : false;
+});
+
+ipcMain.handle('lan:connect-manual', async (event, { ip, port }) => {
+  return lanService ? await lanService.connectManual(ip, port) : { success: false, error: 'LAN service inactive' };
+});
+
 
 
