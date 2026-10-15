@@ -1,0 +1,65 @@
+{
+  "name": "animeopen",
+  "version": "1.0.0",
+  "description": "Desktop anime library and streaming player for your local collection",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "build:win": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.animeopen.app",
+    "productName": "AnimeOpen",
+    "electronDist": "node_modules/electron/dist",
+    "forceCodeSigning": false,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "src/assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AnimeOpen",
+      "installerIcon": "src/assets/icon.ico",
+      "uninstallerIcon": "src/assets/icon.ico"
+    }
+  },
+  "keywords": [
+    "anime",
+    "electron",
+    "video-player",
+    "streaming",
+    "anilist"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^26.15.3"
+  },
+  "dependencies": {
+    "adm-zip": "^0.6.1",
+    "webtorrent": "^3.0.21",
+    "yauzl": "^2.10.0"
+  }
+}

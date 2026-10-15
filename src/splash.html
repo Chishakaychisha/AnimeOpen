@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnimeOpen</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #020205;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      font-family: 'Outfit', sans-serif;
+      user-select: none;
+      -webkit-app-region: drag;
+      cursor: pointer;
+      position: relative;
+    }
+
+    /* ── Cinematic Deep Dark Backdrop ── */
+    .splash-backdrop {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 65% 55% at 50% 48%,
+        rgba(255, 69, 0, 0.22) 0%,
+        rgba(0, 180, 255, 0.08) 35%,
+        rgba(2, 2, 5, 0.95) 70%,
+        #020205 100%);
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    /* Rotating Light Shafts */
+    .splash-light-shafts {
+      position: absolute;
+      inset: -50%;
+      background: conic-gradient(
+        from 270deg at 50% 50%,
+        transparent 0deg,
+        rgba(255, 80, 0, 0.09) 3deg,
+        transparent 6deg,
+        transparent 30deg,
+        rgba(0, 200, 255, 0.07) 33deg,
+        transparent 36deg,
+        transparent 65deg,
+        rgba(255, 100, 0, 0.08) 68deg,
+        transparent 71deg,
+        transparent 110deg,
+        rgba(0, 210, 255, 0.06) 113deg,
+        transparent 116deg,
+        transparent 180deg
+      );
+      animation: shaftsRotate 12s linear infinite;
+      transform-origin: center;
+      pointer-events: none;
+    }
+
+    @keyframes shaftsRotate {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    /* Floating Energy Sparkle Particles */
+    .splash-particles {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .sp {
+      position: absolute;
+      font-size: 1.2rem;
+      opacity: 0;
+      animation: spFloat 3.2s ease-in-out infinite;
+      user-select: none;
+      filter: drop-shadow(0 0 8px rgba(255, 150, 0, 0.9));
+    }
+
+    .sp.p1 { left: 14%; top: 28%; animation-delay: 0.1s; color: #ff6600; font-size: 1.1rem; }
+    .sp.p2 { left: 22%; top: 68%; animation-delay: 0.6s; color: #ffb800; font-size: 0.85rem; }
+    .sp.p3 { right: 16%; top: 24%; animation-delay: 0.3s; color: #00d0ff; font-size: 1rem; }
+    .sp.p4 { right: 24%; top: 72%; animation-delay: 0.9s; color: #ffcc00; font-size: 0.8rem; }
+    .sp.p5 { left: 50%; top: 12%; animation-delay: 0.5s; color: #ff4500; font-size: 0.75rem; }
+    .sp.p6 { left: 35%; top: 82%; animation-delay: 0.8s; color: #00b0ff; font-size: 0.75rem; }
+
+    @keyframes spFloat {
+      0%   { opacity: 0;   transform: translateY(18px) scale(0.7); }
+      30%  { opacity: 0.95; transform: translateY(-4px) scale(1.1); }
+      70%  { opacity: 0.75; transform: translateY(-14px) scale(1.0); }
+      100% { opacity: 0;   transform: translateY(-28px) scale(0.8); }
+    }
+
+    /* ── Center Content ── */
+    .splash-content {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+    }
+
+    /* Torii Gate Symbol Container */
+    .symbol-container {
+      position: relative;
+      width: 170px;
+      height: 170px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Ambient Pulsating Glow Ring */
+    .glow-ring {
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      background: transparent;
+      border: 2px solid rgba(255, 90, 0, 0.45);
+      box-shadow:
+        0 0 24px rgba(255, 80, 0, 0.55),
+        0 0 70px rgba(255, 40, 0, 0.28),
+        inset 0 0 32px rgba(200, 20, 0, 0.16);
+      animation: ringPulse 1.8s ease-in-out infinite alternate;
+    }
+
+    @keyframes ringPulse {
+      0%  {
+        border-color: rgba(255, 90, 0, 0.45);
+        box-shadow: 0 0 20px rgba(255, 80, 0, 0.5), 0 0 50px rgba(255, 40, 0, 0.22);
+        transform: scale(0.98);
+      }
+      100% {
+        border-color: rgba(0, 200, 255, 0.65);
+        box-shadow: 0 0 32px rgba(0, 190, 255, 0.6), 0 0 85px rgba(0, 150, 255, 0.28);
+        transform: scale(1.05);
+      }
+    }
+
+    /* SVG Torii Gate Emblem */
+    .emblem-svg {
+      width: 135px;
+      height: 135px;
+      animation: emblemPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both,
+                 emblemBreathe 2.4s ease-in-out 0.8s infinite alternate;
+      filter: drop-shadow(0 0 16px rgba(255, 80, 0, 0.85));
+    }
+
+    @keyframes emblemPop {
+      from { opacity: 0; transform: scale(0.35) rotate(-12deg); }
+      to   { opacity: 1; transform: scale(1) rotate(0deg); }
+    }
+
+    @keyframes emblemBreathe {
+      0%  { filter: drop-shadow(0 0 12px rgba(255, 80, 0, 0.75)) drop-shadow(0 0 25px rgba(255, 50, 0, 0.45)); }
+      100%{ filter: drop-shadow(0 0 20px rgba(0, 200, 255, 0.85)) drop-shadow(0 0 40px rgba(0, 170, 255, 0.38)); }
+    }
+
+    /* Glowing Sun Orb */
+    .ao-orb {
+      animation: orbSpin 2.5s linear infinite, orbShimmer 1.8s ease-in-out infinite alternate;
+      transform-origin: 60px 68px;
+    }
+
+    @keyframes orbSpin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    @keyframes orbShimmer {
+      0%  { opacity: 0.95; }
+      100%{ opacity: 0.75; }
+    }
+
+    /* Path strokes */
+    .ao-arch {
+      stroke-dasharray: 300;
+      stroke-dashoffset: 300;
+      animation: tracePath 0.6s ease 0.1s forwards;
+    }
+    .ao-bar {
+      stroke-dasharray: 80;
+      stroke-dashoffset: 80;
+      animation: tracePath 0.4s ease 0.4s forwards;
+    }
+    .ao-leg {
+      stroke-dasharray: 200;
+      stroke-dashoffset: 200;
+      animation: tracePath 0.5s ease 0.3s forwards;
+    }
+
+    @keyframes tracePath {
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* ── Typography Group ── */
+    .title-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      animation: titleReveal 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.45s both;
+    }
+
+    @keyframes titleReveal {
+      from { opacity: 0; transform: translateY(16px) scale(0.92); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .main-title {
+      font-size: 2.5rem;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      color: #ffffff;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 0.18em;
+      text-shadow:
+        0 0 20px rgba(255, 100, 0, 0.6),
+        0 2px 10px rgba(0, 0, 0, 0.9);
+    }
+
+    .title-anime {
+      color: #ffffff;
+    }
+
+    .title-open {
+      background: linear-gradient(135deg, #ff4500 0%, #ff8800 45%, #00c8ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 14px rgba(255, 80, 0, 0.65));
+      position: relative;
+    }
+
+    .tagline {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.42em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.55);
+      animation: taglineFade 0.6s ease 0.8s both;
+    }
+
+    @keyframes taglineFade {
+      from { opacity: 0; letter-spacing: 0.6em; }
+      to   { opacity: 1; letter-spacing: 0.42em; }
+    }
+
+    /* ── Loading Track at Bottom ── */
+    .loading-container {
+      position: absolute;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      animation: loadFade 0.5s ease 0.85s both;
+      -webkit-app-region: no-drag;
+    }
+
+    @keyframes loadFade {
+      to { opacity: 1; }
+    }
+
+    .loading-track {
+      width: 170px;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .loading-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff4500, #ff8800, #00c8ff);
+      box-shadow: 0 0 10px rgba(255, 80, 0, 0.9);
+      border-radius: 4px;
+      animation: progress 2.0s cubic-bezier(0.25, 1, 0.5, 1) 0.6s forwards;
+    }
+
+    @keyframes progress {
+      0%   { width: 0%; }
+      35%  { width: 45%; }
+      75%  { width: 85%; }
+      100% { width: 100%; }
+    }
+
+    .loading-hint {
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.35);
+    }
+
+    .skip-prompt {
+      position: absolute;
+      bottom: 12px;
+      right: 18px;
+      font-size: 0.65rem;
+      color: rgba(255, 255, 255, 0.25);
+      letter-spacing: 1px;
+      -webkit-app-region: no-drag;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+
+    .skip-prompt:hover {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Page Fade Out */
+    body.fade-out {
+      animation: splashExit 0.4s ease forwards !important;
+    }
+
+    @keyframes splashExit {
+      from { opacity: 1; transform: scale(1); }
+      to   { opacity: 0; transform: scale(1.03); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Cinematic Ambient Backdrop -->
+  <div class="splash-backdrop">
+    <div class="splash-light-shafts"></div>
+    <div class="splash-particles">
+      <span class="sp p1">⚡</span>
+      <span class="sp p2">✦</span>
+      <span class="sp p3">⚡</span>
+      <span class="sp p4">✦</span>
+      <span class="sp p5">◆</span>
+      <span class="sp p6">✦</span>
+    </div>
+  </div>
+
+  <!-- Center Logo & Branding -->
+  <div class="splash-content">
+    <div class="symbol-container">
+      <div class="glow-ring"></div>
+      <svg class="emblem-svg" viewBox="0 0 120 120">
+        <defs>
+          <linearGradient id="splashToriiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#cc1a00"/>
+            <stop offset="45%" stop-color="#ff4500"/>
+            <stop offset="100%" stop-color="#00c8ff"/>
+          </linearGradient>
+          <linearGradient id="splashOrbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffe600"/>
+            <stop offset="100%" stop-color="#ffb800"/>
+          </linearGradient>
+          <filter id="splashGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="6" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <filter id="splashOrbGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <!-- Japanese Torii Gate Portal -->
+        <path class="ao-arch" d="M15 32 C35 24, 85 24, 105 32 L101 40 C85 33, 35 33, 19 40 Z" fill="url(#splashToriiGrad)" filter="url(#splashGlow)"/>
+        <rect class="ao-bar" x="24" y="44" width="72" height="6" rx="3" fill="url(#splashToriiGrad)"/>
+        <path class="ao-leg left" d="M30 40 L26 95 L34 95 L37 40 Z" fill="url(#splashToriiGrad)"/>
+        <path class="ao-leg right" d="M83 40 L86 95 L94 95 L90 40 Z" fill="url(#splashToriiGrad)"/>
+        <!-- Golden Center Orb / Sun -->
+        <circle class="ao-orb" cx="60" cy="68" r="13" fill="url(#splashOrbGrad)" filter="url(#splashOrbGlow)"/>
+      </svg>
+    </div>
+
+    <div class="title-group">
+      <div class="main-title">
+        <span class="title-anime">ANIME</span><span class="title-open">OPEN</span>
+      </div>
+      <div class="tagline">STREAM THE UNIVERSE</div>
+    </div>
+  </div>
+
+  <!-- Loading Bar Indicator -->
+  <div class="loading-container">
+    <div class="loading-track">
+      <div class="loading-bar"></div>
+    </div>
+    <div class="loading-hint">Initializing Library</div>
+  </div>
+
+  <div class="skip-prompt">Click anywhere to skip ➔</div>
+
+  <script>
+    // Synthesize the signature AnimeOpen Cinematic Intro Audio (Sub Bass Boom + Celeste Chimes)
+    function playCinematicChime() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+
+        // 1. Deep Sub Bass Impact Boom
+        const subOsc = ctx.createOscillator();
+        const subGain = ctx.createGain();
+        subOsc.type = 'sine';
+        subOsc.frequency.setValueAtTime(85, now);
+        subOsc.frequency.exponentialRampToValueAtTime(30, now + 0.9);
+        subGain.gain.setValueAtTime(0.65, now);
+        subGain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        subOsc.connect(subGain);
+        subGain.connect(ctx.destination);
+        subOsc.start(now);
+        subOsc.stop(now + 1.3);
+
+        // 2. High Shimmer Celeste Chimes (Japanese anime sparkle)
+        const chimeFreqs = [1046.5, 1318.51, 1567.98, 2093.0];
+        chimeFreqs.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + 0.15 + (i * 0.05));
+          gain.gain.setValueAtTime(0.16, now + 0.15 + (i * 0.05));
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.4 + (i * 0.1));
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + 0.15 + (i * 0.05));
+          osc.stop(now + 1.5 + (i * 0.1));
+        });
+      } catch (err) {
+        console.warn('Audio chime skipped:', err);
+      }
+    }
+
+    // Play chime on start
+    playCinematicChime();
+
+    let finished = false;
+    function finishSplash() {
+      if (finished) return;
+      finished = true;
+      document.body.classList.add('fade-out');
+      setTimeout(() => {
+        if (window.api && window.api.splashReady) {
+          window.api.splashReady();
+        }
+      }, 380);
+    }
+
+    // Auto finish after animation plays (2.6s)
+    setTimeout(finishSplash, 2600);
+
+    // Skip on click or keypress
+    window.addEventListener('click', finishSplash);
+    window.addEventListener('keydown', finishSplash);
+  </script>
+</body>
+</html>

@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnimeOpen - Local Anime Streaming & Library</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/player.css">
+</head>
+<body class="dark-theme">
+  <!-- Custom Draggable App Titlebar -->
+  <header class="app-titlebar">
+    <div class="titlebar-drag-region">
+      <div class="brand" id="appLogo" title="AnimeOpen">
+        <div class="brand-torii-icon">
+          <svg class="brand-torii-svg" viewBox="0 0 120 120">
+            <defs>
+              <linearGradient id="brandToriiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#cc1a00"/>
+                <stop offset="45%" stop-color="#ff4500"/>
+                <stop offset="100%" stop-color="#00c8ff"/>
+              </linearGradient>
+              <linearGradient id="brandOrbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ffe600"/>
+                <stop offset="100%" stop-color="#ffb800"/>
+              </linearGradient>
+            </defs>
+            <path class="ao-arch" d="M15 32 C35 24, 85 24, 105 32 L101 40 C85 33, 35 33, 19 40 Z" fill="url(#brandToriiGrad)"/>
+            <rect class="ao-bar" x="24" y="44" width="72" height="6" rx="3" fill="url(#brandToriiGrad)"/>
+            <path class="ao-leg" d="M30 40 L26 95 L34 95 L37 40 Z" fill="url(#brandToriiGrad)"/>
+            <path class="ao-leg" d="M83 40 L86 95 L94 95 L90 40 Z" fill="url(#brandToriiGrad)"/>
+            <circle class="ao-orb" cx="60" cy="68" r="13" fill="url(#brandOrbGrad)"/>
+          </svg>
+        </div>
+        <span class="brand-text">ANIME<span class="brand-gradient">OPEN</span></span>
+      </div>
+
+      <div class="titlebar-folder-info" id="btnQuickFolderSelect" title="Click to change folder">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+          <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+        </svg>
+        <span id="currentFolderPathDisplay">No folder selected</span>
+      </div>
+    </div>
+
+    <!-- Window Actions (Min, Max, Close) -->
+    <div class="window-controls">
+      <button class="win-btn win-btn-min" id="btnWinMin" title="Minimize">
+        <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/></svg>
+      </button>
+      <button class="win-btn win-btn-max" id="btnWinMax" title="Maximize">
+        <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><rect x="5" y="5" width="14" height="14" rx="1"/></svg>
+      </button>
+      <button class="win-btn win-btn-close" id="btnWinClose" title="Close">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-main-content">
+    
+    <!-- View 1: Library & Discovery View -->
+    <section class="view-container" id="libraryView">
+      
+      <!-- Top Action Toolbar -->
+      <div class="library-toolbar">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+          </svg>
+          <input type="text" id="searchAnimeInput" placeholder="Search anime title, romaji or file..." spellcheck="false" autocomplete="off" />
+        </div>
+
+        <div class="toolbar-actions">
+          <button class="btn-primary btn-add-library-nav" id="btnOpenBrowser" title="Browse Popular Anime Sites & Download Directly to Library">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+            </svg>
+            Add to My Library
+          </button>
+
+          <button class="btn-secondary" id="btnOpenRssModal" title="Automated Episode Downloader via RSS Feeds">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M4 4.44v2.83c7.03 0 12.73 5.7 12.73 12.73h2.83c0-8.59-6.97-15.56-15.56-15.56zm0 5.66v2.83c3.9 0 7.07 3.17 7.07 7.07h2.83c0-5.47-4.43-9.9-9.9-9.9zM6.18 15.64A2.18 2.18 0 0 0 4 17.82c0 1.2.98 2.18 2.18 2.18s2.18-.98 2.18-2.18c0-1.2-.98-2.18-2.18-2.18z"/>
+            </svg>
+            Auto-Download (RSS)
+          </button>
+
+          <div class="sort-selector">
+            <label for="sortSelect">Sort:</label>
+            <select id="sortSelect">
+              <option value="recent">Recently Added / Watched</option>
+              <option value="title">Title (A - Z)</option>
+              <option value="score">Highest Rated</option>
+            </select>
+          </div>
+
+          <button class="btn-icon" id="btnOpenSettings" title="App Settings & Folder Configuration">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Status & Genre Filter Bar -->
+      <div class="filter-controls-bar">
+        <div class="status-bar" id="statusFilterContainer">
+          <button class="filter-pill active" data-status="ALL">All Anime</button>
+          <button class="filter-pill" data-status="WATCHING">👀 Watching</button>
+          <button class="filter-pill" data-status="COMPLETED">✅ Completed</button>
+          <button class="filter-pill" data-status="PLAN_TO_WATCH">📋 Plan to Watch</button>
+        </div>
+      </div>
+
+      <!-- Genre Filter Pills -->
+      <div class="genre-bar" id="genreFilterContainer">
+        <button class="filter-pill active" data-genre="ALL">All Genres</button>
+      </div>
+
+      <!-- Continue Watching Shelf -->
+      <section class="shelf-section hidden" id="continueWatchingSection">
+        <div class="shelf-header">
+          <h2 class="shelf-title">Continue Watching</h2>
+          <span class="shelf-sub">Jump right back into your episodes</span>
+        </div>
+        <div class="continue-grid" id="continueGrid">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+      <!-- All Anime Library Grid -->
+      <section class="shelf-section">
+        <div class="shelf-header">
+          <h2 class="shelf-title">All Anime Collections</h2>
+          <div class="shelf-spinner hidden" id="scanSpinner">
+            <span class="spinner-dot"></span>
+            <span>Scanning library & fetching metadata...</span>
+          </div>
+        </div>
+
+        <!-- Anime Cards Grid -->
+        <div class="anime-grid" id="animeGrid">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Empty State Prompt -->
+        <div class="empty-state hidden" id="emptyState">
+          <div class="empty-illustration">
+            <svg viewBox="0 0 24 24" width="72" height="72" fill="currentColor">
+              <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/>
+            </svg>
+          </div>
+          <h2>Welcome to AnimeOpen</h2>
+          <p>Choose your local anime folder. AnimeOpen will automatically detect series, seasons, episodes, and streamable zip archives with high-res AniList artwork!</p>
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+            <button class="btn-primary" id="btnSelectFolderPrompt">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+              </svg>
+              Select Anime Folder
+            </button>
+            <button class="btn-secondary" id="btnEmptyBrowsePrompt">
+              🌐 Add Anime from Web
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </section>
+
+    <!-- View 2: Anime Detail & Episode View -->
+    <section class="view-container hidden" id="detailView">
+      <button class="btn-back" id="btnBackToLibrary">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+          <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+        </svg>
+        Back to Library
+      </button>
+
+      <!-- Hero Cinematic Banner -->
+      <div class="detail-hero">
+        <div class="hero-backdrop" id="detailHeroBackdrop"></div>
+        <div class="hero-gradient-overlay"></div>
+
+        <div class="hero-content">
+          <div class="hero-poster-wrapper">
+            <img class="hero-poster" id="detailPoster" src="" alt="Poster" />
+          </div>
+
+          <div class="hero-info">
+            <h1 class="hero-title" id="detailTitle">Anime Title</h1>
+            <h2 class="hero-romaji" id="detailRomaji">Romaji Subtitle</h2>
+
+            <div class="hero-meta-stats" id="detailMetaStats">
+              <!-- Meta pills (Score, Year, Status, Studio) -->
+            </div>
+
+            <!-- Airing & Missing Episodes Banner -->
+            <div id="detailAiringBanner" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;"></div>
+
+            <div class="hero-genres" id="detailGenres">
+              <!-- Genre tags -->
+            </div>
+
+            <p class="hero-description" id="detailDescription">
+              Detailed synopsis appears here...
+            </p>
+
+            <div class="hero-actions">
+              <button class="btn-primary btn-hero-play" id="btnDetailPlayFirst">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                Play Episode 1
+              </button>
+              
+              <!-- Watch Status Selector -->
+              <select id="detailWatchStatus" class="watch-status-select" title="Change Watch Status">
+                <option value="WATCHING">👀 Watching</option>
+                <option value="COMPLETED">✅ Completed</option>
+                <option value="PLAN_TO_WATCH">📋 Plan to Watch</option>
+                <option value="DROPPED">❌ Dropped</option>
+              </select>
+
+              <button class="btn-secondary" id="btnDetailOpenFolder" title="Show file in Windows Explorer">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+                Open Folder
+              </button>
+              <button class="btn-secondary" id="btnDetailRematch" title="Search AniList for a different title match">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+                Rematch Info
+              </button>
+              <button class="btn-secondary" id="btnDetailManualEdit" title="Manually edit title, cover, and synopsis">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                Edit Details
+              </button>
+              <button class="btn-secondary" id="btnDetailBatchRename" title="Clean release tags like [AnimeKaizoku] from episode filenames">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M2.5 4v3h5v12h3V7h5V4h-13zm19 5h-9v3h3v7h3v-7h3V9z"/></svg>
+                Clean Filenames
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Characters & Voice Actors Section -->
+      <section class="detail-cast-section" id="detailCharactersSection" style="display:none">
+        <div class="episodes-header">
+          <h3>Characters & Voice Actors</h3>
+          <span class="ep-count-badge">Main Seiyuu Cast</span>
+        </div>
+        <div class="cast-carousel" id="detailCastCarousel">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+      <!-- Theme Songs Section -->
+      <section class="detail-themes-section" id="detailThemesSection" style="display:none">
+        <div class="episodes-header">
+          <h3>🎵 Opening & Ending Themes</h3>
+        </div>
+        <div class="themes-grid" id="detailThemesGrid">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+      <!-- Episodes Section -->
+      <section class="episodes-container">
+        <div class="episodes-header">
+          <h3>Episodes List</h3>
+          <span class="ep-count-badge" id="detailEpCountBadge">0 Episodes</span>
+        </div>
+
+        <div class="episodes-list" id="detailEpisodesList">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+    </section>
+
+  </main>
+
+  <!-- View 3: In-App Cinematic Video Player -->
+  <div class="player-fullscreen-view hidden" id="playerView">
+    <video id="mainVideo" preload="metadata" playsinline></video>
+
+    <!-- Cinematic AnimeOpen Netflix-style Intro Bumper Animation -->
+    <div class="player-intro-bumper hidden" id="playerIntroBumper">
+      <div class="bumper-backdrop">
+        <div class="bumper-light-shafts"></div>
+        <div class="bumper-particles">
+          <span class="bp p1">⚡</span>
+          <span class="bp p2">✦</span>
+          <span class="bp p3">⚡</span>
+          <span class="bp p4">✦</span>
+          <span class="bp p5">◆</span>
+          <span class="bp p6">✦</span>
+        </div>
+      </div>
+      <div class="bumper-content">
+        <div class="bumper-symbol">
+          <div class="bumper-glow-circle"></div>
+          <svg class="bumper-emblem" viewBox="0 0 120 120">
+            <defs>
+              <linearGradient id="aoEmblemGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#cc1a00"/>
+                <stop offset="45%" stop-color="#ff4500"/>
+                <stop offset="100%" stop-color="#00c8ff"/>
+              </linearGradient>
+              <linearGradient id="aoOrbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ffe600"/>
+                <stop offset="100%" stop-color="#ffb800"/>
+              </linearGradient>
+              <filter id="aoSuperGlow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="7" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <filter id="aoOrbGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="5" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            <!-- Anime Torii Portal / Apex Gate -->
+            <path class="ao-arch" d="M15 32 C35 24, 85 24, 105 32 L101 40 C85 33, 35 33, 19 40 Z" fill="url(#aoEmblemGrad)" filter="url(#aoSuperGlow)"/>
+            <rect class="ao-bar" x="24" y="44" width="72" height="6" rx="3" fill="url(#aoEmblemGrad)"/>
+            <path class="ao-leg left" d="M30 40 L26 95 L34 95 L37 40 Z" fill="url(#aoEmblemGrad)"/>
+            <path class="ao-leg right" d="M83 40 L86 95 L94 95 L90 40 Z" fill="url(#aoEmblemGrad)"/>
+            <circle class="ao-orb" cx="60" cy="68" r="13" fill="url(#aoOrbGrad)" filter="url(#aoOrbGlow)"/>
+          </svg>
+        </div>
+        <div class="bumper-text-group">
+          <div class="bumper-title">ANIME<span class="bumper-title-accent">OPEN</span></div>
+          <div class="bumper-tagline">STREAM THE UNIVERSE</div>
+        </div>
+      </div>
+      <button class="bumper-skip-btn" id="btnSkipBumper">Skip Intro ➔</button>
+    </div>
+
+    <!-- Center Flash Action Animation -->
+    <div class="center-action-icon" id="centerActionIcon"></div>
+
+    <!-- Floating Top Bar -->
+    <div class="player-topbar" id="playerTopbar">
+      <button class="btn-player-icon" id="btnPlayerBack" title="Back (Esc)">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+          <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+        </svg>
+      </button>
+
+      <div class="player-titles">
+        <div class="player-anime-name" id="playerAnimeTitle">Anime Title</div>
+        <div class="player-ep-name" id="playerEpisodeTitle">Episode 1</div>
+      </div>
+    </div>
+
+    <!-- AniSkip Buttons -->
+    <button id="btnSkipIntro" class="btn-skip-intro hidden">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+      Skip Opening
+    </button>
+    <button id="btnSkipEnding" class="btn-skip-intro hidden">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+      Skip Ending
+    </button>
+
+    <!-- Auto Next Episode Overlay Prompt -->
+    <div class="next-ep-overlay hidden" id="nextEpisodeOverlay">
+      <div class="next-ep-card">
+        <div class="next-ep-thumb-wrapper">
+          <img class="next-ep-thumb" id="nextEpThumbImg" src="" alt="Thumbnail" />
+          <div class="next-ep-thumb-badge">UP NEXT</div>
+        </div>
+        <div class="next-ep-details">
+          <div class="next-ep-header">Playing Next</div>
+          <div class="next-ep-title" id="nextEpTitlePreview">Episode Title</div>
+          <div class="next-ep-timer" id="nextEpCountdown">Auto-playing in 15s...</div>
+          <div class="next-ep-actions">
+            <button class="btn-primary" id="btnNextEpNow">Play Now ➔</button>
+            <button class="btn-secondary" id="btnNextEpCancel">Dismiss</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Bottom Player Controls -->
+    <div class="player-controls" id="playerControls">
+      <!-- Scrubber Seek Bar -->
+      <div class="player-progress-bar-container" id="playerProgress">
+        <div class="player-buffer-fill" id="playerBufferFill"></div>
+        <div class="player-progress-fill" id="playerProgressFill"></div>
+        <div class="player-time-tooltip" id="playerTimeTooltip">00:00</div>
+      </div>
+
+      <!-- Controls Buttons Row -->
+      <div class="player-controls-row">
+        <div class="controls-left">
+          <button class="btn-player-icon" id="btnPlayPause" title="Play/Pause (Space)">
+            <svg id="playIconSvg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </button>
+
+          <button class="btn-player-icon" id="btnPrevEp" title="Previous Episode (P)">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+              <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+            </svg>
+          </button>
+
+          <button class="btn-player-icon" id="btnNextEp" title="Next Episode (N)">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+              <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+            </svg>
+          </button>
+
+          <!-- Volume -->
+          <div class="volume-container">
+            <button class="btn-player-icon" id="btnVolumeIcon" title="Mute (M)">
+              <svg id="volumeIconSvg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                <path d="M3 9v6h4l5 5V4L9 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+              </svg>
+            </button>
+            <input type="range" class="volume-slider" id="playerVolumeSlider" min="0" max="1" step="0.05" value="1" />
+          </div>
+
+          <div class="player-time-display" id="playerTimeDisplay">00:00 / 00:00</div>
+        </div>
+
+        <div class="controls-right">
+          <!-- Audio Track Selector -->
+          <div class="track-control" id="audioTrackControl">
+            <button class="btn-player-icon" id="btnAudioTrack" title="Audio Track (Language)">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+            </button>
+            <div class="track-menu" id="audioTrackMenu"></div>
+          </div>
+
+          <!-- Subtitle Track Selector -->
+          <div class="track-control" id="subtitleTrackControl">
+            <button class="btn-player-icon" id="btnSubTrack" title="Subtitles / Captions">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h16v12zM6 10h2v2H6zm0 4h8v2H6zm10 0h2v2h-2zm-6-4h8v2h-8z"/></svg>
+            </button>
+            <div class="track-menu" id="subtitleTrackMenu"></div>
+          </div>
+
+          <!-- Speed Menu -->
+          <div class="speed-control">
+            <button class="btn-player-text" id="btnSpeed" title="Playback Speed">1.0x</button>
+            <div class="speed-menu" id="playerSpeedMenu">
+              <button class="speed-option" data-speed="0.5">0.5x</button>
+              <button class="speed-option" data-speed="0.75">0.75x</button>
+              <button class="speed-option" data-speed="1.0">1.0x (Normal)</button>
+              <button class="speed-option" data-speed="1.25">1.25x</button>
+              <button class="speed-option" data-speed="1.5">1.5x</button>
+              <button class="speed-option" data-speed="2.0">2.0x</button>
+            </div>
+          </div>
+
+          <!-- Screenshot (S) -->
+          <button class="btn-player-icon" id="btnPlayerScreenshot" title="Capture Screenshot (S)">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
+            </svg>
+          </button>
+
+          <!-- External Player (VLC / MPV) -->
+          <button class="btn-player-icon" id="btnPlayerExternal" title="Play in External Player (VLC / MPV)">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M19 19H5V5h7V3H5c-1.11 0-2-.9-2-2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+            </svg>
+          </button>
+
+          <!-- Picture in Picture -->
+          <button class="btn-player-icon" id="btnPip" title="Picture-in-Picture">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M19 7h-8v6h8V7zm2-4H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16.01H3V4.99h18v14.02z"/>
+            </svg>
+          </button>
+
+          <!-- Fullscreen -->
+          <button class="btn-player-icon" id="btnFullscreen" title="Fullscreen (F)">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+              <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay hidden" id="settingsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Settings & Preferences</h3>
+        <button class="modal-close-btn" id="btnCloseSettings">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Theme Selection -->
+        <div class="setting-item">
+          <label>Visual Aesthetic Theme</label>
+          <div class="theme-chips-row" id="themeChipsContainer">
+            <button class="theme-chip" data-theme="oled">
+              <span class="theme-dot" style="background:#ff3366"></span> Midnight OLED
+            </button>
+            <button class="theme-chip" data-theme="cyberpunk">
+              <span class="theme-dot" style="background:#00f0ff"></span> Cyberpunk Neo-Tokyo
+            </button>
+            <button class="theme-chip" data-theme="sakura">
+              <span class="theme-dot" style="background:#ff6fa9"></span> Sakura Bloom
+            </button>
+            <button class="theme-chip" data-theme="emerald">
+              <span class="theme-dot" style="background:#00e676"></span> Emerald Ghibli
+            </button>
+            <button class="theme-chip" data-theme="bloodmoon">
+              <span class="theme-dot" style="background:#ff2a4b"></span> Blood Moon / Akaza
+            </button>
+            <button class="theme-chip" data-theme="sunset">
+              <span class="theme-dot" style="background:#ff7b00"></span> Vaporwave Sunset
+            </button>
+          </div>
+        </div>
+
+        <!-- Anime Library Directory -->
+        <div class="setting-item">
+          <label>Anime Library Directory</label>
+          <div class="setting-folder-box">
+            <span class="folder-path-text" id="settingsCurrentFolder">None selected</span>
+            <button class="btn-secondary" id="btnSettingsChangeFolder">Change Folder</button>
+          </div>
+        </div>
+
+        <!-- Auto-skip OP/ED setting -->
+        <div class="setting-item">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+            <input type="checkbox" id="settingAutoSkip" style="width:18px;height:18px;accent-color:var(--accent-primary)" />
+            <span>Automatically skip Opening & Ending without clicking</span>
+          </label>
+        </div>
+
+        <!-- Cinematic Intro Bumper setting -->
+        <div class="setting-item">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+            <input type="checkbox" id="settingIntroBumper" checked style="width:18px;height:18px;accent-color:var(--accent-primary)" />
+            <span>Play Cinematic AnimeOpen Intro Animation before episodes</span>
+          </label>
+        </div>
+
+        <!-- Auto-start on Windows Startup & Wake -->
+        <div class="setting-item">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+            <input type="checkbox" id="settingAutoStart" style="width:18px;height:18px;accent-color:var(--accent-primary)" />
+            <span>Launch automatically when Windows starts / wakes up</span>
+          </label>
+          <small style="color:var(--text-muted);font-size:12px;margin-left:28px;display:block;margin-top:3px;">
+            Starts AnimeOpen with Windows so active downloads and library are always accessible when your PC boots or wakes from sleep.
+          </small>
+        </div>
+
+        <div class="setting-item">
+          <button class="btn-secondary" id="btnOpenUserGuideFromSettings" style="width:100%;justify-content:center;gap:8px;">
+            📖 Open User Guide & Shortcuts
+          </button>
+        </div>
+
+        <div class="setting-item">
+          <label>Library Statistics</label>
+          <div class="stats-row">
+            <div class="stat-box">
+              <span class="stat-num" id="settingsAnimeCount">0</span>
+              <span class="stat-label">Series</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-num" id="settingsEpCount">0</span>
+              <span class="stat-label">Episodes</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-actions">
+          <button class="btn-primary" id="btnSettingsRescan">Rescan Library & Refresh Metadata</button>
+          <button class="btn-danger" id="btnSettingsClearCache">Clear Metadata Cache</button>
+          <button class="btn-secondary" id="btnSettingsClose" style="justify-content:center;">Close Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manual Metadata Modal -->
+  <div class="modal-overlay hidden" id="manualMetaModal">
+    <div class="modal-card" style="max-width:540px">
+      <div class="modal-header">
+        <h3>✏️ Add Metadata Manually</h3>
+        <button class="modal-close-btn" id="btnCloseManualMeta" title="Close (Esc)">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="manual-meta-form">
+          <label>Anime Title</label>
+          <input type="text" id="manualMetaTitle" placeholder="e.g. Attack on Titan" />
+
+          <label>Cover Image URL <small>(paste any image link)</small></label>
+          <input type="text" id="manualMetaCover" placeholder="https://..." />
+          <div class="manual-cover-preview-wrap">
+            <img id="manualCoverPreview" src="" style="display:none;max-height:160px;border-radius:8px;margin-top:8px" />
+          </div>
+
+          <label>Description</label>
+          <textarea id="manualMetaDesc" rows="4" placeholder="Write a short synopsis..."></textarea>
+
+          <label>Year</label>
+          <input type="number" id="manualMetaYear" placeholder="e.g. 2023" style="max-width:120px" />
+
+          <label>Score (0–100)</label>
+          <input type="number" id="manualMetaScore" placeholder="e.g. 85" min="0" max="100" style="max-width:120px" />
+
+          <label>Genres <small>(comma-separated)</small></label>
+          <input type="text" id="manualMetaGenres" placeholder="Action, Adventure, Fantasy" />
+        </div>
+        <div class="setting-actions" style="margin-top:16px">
+          <button class="btn-primary" id="btnSaveManualMeta">Save Metadata</button>
+          <button class="btn-secondary" id="btnManualMetaRematch">Search AniList Instead</button>
+          <button class="btn-secondary" id="btnCancelManualMeta" style="justify-content:center;">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rematch Modal -->
+  <div class="modal-overlay hidden" id="rematchModal">
+    <div class="modal-card rematch-card">
+      <div class="modal-header">
+        <h3>Rematch Anime with AniList</h3>
+        <button class="modal-close-btn" id="btnCloseRematch" title="Close (Esc)">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="rematch-search-row">
+          <input type="text" id="rematchSearchInput" placeholder="Search anime title on AniList..." />
+          <button class="btn-primary" id="btnRematchSearch">Search</button>
+        </div>
+
+        <div class="rematch-results-container" id="rematchResults">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div class="setting-actions" style="margin-top:8px">
+          <button class="btn-secondary" id="btnCancelRematch" style="justify-content:center;">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Batch Renamer Modal -->
+  <div class="modal-overlay hidden" id="batchRenameModal">
+    <div class="modal-card" style="max-width:760px">
+      <div class="modal-header">
+        <h3>🏷️ Clean & Standardize Episode Filenames</h3>
+        <button class="modal-close-btn" id="btnCloseBatchRename">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:12px">
+          Removes messy release tags like <code>[AnimeKaizoku]</code>, <code>[1080p Dual Audio x265]</code> and standardizes episode files cleanly. Check the preview below before confirming:
+        </p>
+        <div class="rename-table-wrap">
+          <table class="rename-table">
+            <thead>
+              <tr>
+                <th>Current File Name</th>
+                <th style="width:24px"></th>
+                <th>Clean Standard Name</th>
+              </tr>
+            </thead>
+            <tbody id="batchRenameTableBody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+        <div class="setting-actions" style="margin-top:16px">
+          <button class="btn-primary" id="btnApplyBatchRename">Rename All Files Now</button>
+          <button class="btn-secondary" id="btnCancelBatchRename">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OST Mini-Player Bar (fixed bottom, slides up when playing theme songs) -->
+  <div class="ost-player-bar" id="ostPlayerBar">
+    <div class="ost-track-info">
+      <div class="ost-track-title" id="ostTrackTitle">Now Playing</div>
+      <div class="ost-track-type" id="ostTrackType">Opening Theme</div>
+    </div>
+
+    <div class="ost-controls">
+      <button class="ost-btn" id="ostPrevBtn" title="Previous">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+      </button>
+      <button class="ost-btn play-btn" id="ostPlayPauseBtn" title="Play/Pause">
+        <svg id="ostPlayIcon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <button class="ost-btn" id="ostNextBtn" title="Next">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+      </button>
+    </div>
+
+    <div class="ost-progress-wrap">
+      <span class="ost-time" id="ostCurrentTime">0:00</span>
+      <div class="ost-progress-bar" id="ostProgressBar">
+        <div class="ost-progress-fill" id="ostProgressFill" style="width:0%"></div>
+      </div>
+      <span class="ost-time" id="ostDuration">0:00</span>
+    </div>
+
+    <a id="ostYTLink" href="#" target="_blank" class="theme-yt-link" title="Open on YouTube">▶ YouTube</a>
+
+    <button class="ost-close-btn" id="ostCloseBtn" title="Close player">✕</button>
+  </div>
+
+  <!-- In-App Anime Web Browser Modal -->
+  <div class="browser-overlay hidden" id="inAppBrowserModal">
+    <div class="browser-window-container">
+      <!-- Browser Top Toolbar -->
+      <div class="browser-header">
+        <div class="browser-nav-buttons">
+          <button class="browser-btn" id="browserBtnBack" title="Back">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          </button>
+          <button class="browser-btn" id="browserBtnForward" title="Forward">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+          </button>
+          <button class="browser-btn" id="browserBtnReload" title="Reload">
+            <svg id="browserReloadIcon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+          </button>
+          <button class="browser-btn" id="browserBtnHome" title="Home (Nyaa)">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          </button>
+        </div>
+
+        <!-- URL / Search Input Bar -->
+        <div class="browser-url-bar">
+          <div class="browser-url-protocol-badge">🔒 HTTPS</div>
+          <input type="text" id="browserUrlInput" placeholder="Enter URL or search anime releases..." value="https://nyaa.si" spellcheck="false" autocomplete="off" />
+          <button class="browser-go-btn" id="browserBtnGo" title="Go">➔</button>
+        </div>
+
+        <!-- Library Target Folder Indicator -->
+        <div class="browser-target-badge" id="browserTargetBadge" title="Downloaded videos and torrents will be saved into your active library folder">
+          📁 Saving to: <span id="browserTargetFolder" class="target-folder-name">Library Folder</span>
+        </div>
+
+        <!-- Bookmark Current Page Button -->
+        <button class="browser-btn browser-bookmark-btn" id="btnBookmarkPage" title="Bookmark current page (Ctrl+D)">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
+        </button>
+
+        <!-- Manage Bookmarks Panel Toggle -->
+        <button class="browser-btn" id="btnToggleBookmarksPanel" title="Bookmarks & Custom Sites">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zm-2-8h-8V6h8zm0 4h-8v-2h8zm-4 4h-4v-2h4z"/></svg>
+        </button>
+
+        <!-- Downloads Monitor Toggle Button -->
+        <button class="browser-btn browser-dl-toggle-btn" id="btnToggleBrowserDownloads" title="Open Downloads Manager">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          <span class="dl-badge-count hidden" id="browserDlBadgeCount">0</span>
+        </button>
+
+        <!-- Minimize Browser to Library -->
+        <button class="browser-btn browser-minimize-btn" id="browserBtnMinimize" title="Minimize Browser (Keep pages & downloads running in background)">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M5 11h14v2H5z"/></svg>
+        </button>
+
+        <!-- Close Browser -->
+        <button class="browser-close-btn" id="browserBtnClose" title="Return to Library (Esc)">✕</button>
+      </div>
+
+      <!-- Quick Suggestions + Dynamic Bookmarks Strip -->
+      <div class="browser-suggestions-strip" id="browserSuggestionsStrip">
+        <span class="suggestions-label">Anime Sites:</span>
+        <button class="suggestion-chip active" data-url="https://nyaa.si" data-builtin="true">🌸 Nyaa.si</button>
+        <button class="suggestion-chip" data-url="https://subsplease.org" data-builtin="true">⚡ SubsPlease</button>
+        <button class="suggestion-chip" data-url="https://animepahe.ru" data-builtin="true">🍿 AnimePahe</button>
+        <button class="suggestion-chip" data-url="https://hianime.to" data-builtin="true">🎌 HiAnime</button>
+        <button class="suggestion-chip" data-url="https://www.erai-raws.info" data-builtin="true">📼 Erai-raws</button>
+        <button class="suggestion-chip" data-url="https://archive.org/details/anime" data-builtin="true">📦 Archive.org</button>
+        <!-- Dynamic bookmarks injected here by JS -->
+        <span class="bookmarks-divider hidden" id="bookmarksDivider">|</span>
+        <span class="suggestions-label bookmarks-strip-label hidden" id="bookmarksStripLabel">My Bookmarks:</span>
+        <div class="bookmarks-strip-chips" id="bookmarksStripChips"></div>
+      </div>
+
+      <!-- Bookmarks & Custom Sites Panel -->
+      <div class="bookmarks-panel hidden" id="bookmarksPanel">
+        <div class="bookmarks-panel-header">
+          <div class="bookmarks-panel-title">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
+            My Bookmarks & Custom Sites
+          </div>
+          <button class="bookmarks-panel-close" id="btnCloseBookmarksPanel" title="Close">✕</button>
+        </div>
+
+        <!-- Add Custom Site Form -->
+        <div class="bookmark-add-form">
+          <div class="bookmark-add-title">➕ Add Custom Site</div>
+          <div class="bookmark-add-fields">
+            <input type="text" id="bookmarkNameInput" class="bookmark-input" placeholder="Site name (e.g. My Fav Tracker)" />
+            <input type="text" id="bookmarkUrlInput" class="bookmark-input" placeholder="URL (e.g. https://example.com)" />
+            <select id="bookmarkEmojiSelect" class="bookmark-emoji-select">
+              <option value="🔖">🔖 Default</option>
+              <option value="🌐">🌐 Globe</option>
+              <option value="⭐">⭐ Star</option>
+              <option value="🎬">🎬 Film</option>
+              <option value="📺">📺 TV</option>
+              <option value="🎮">🎮 Game</option>
+              <option value="🔥">🔥 Hot</option>
+              <option value="💎">💎 Diamond</option>
+              <option value="🚀">🚀 Rocket</option>
+              <option value="🎭">🎭 Drama</option>
+            </select>
+            <button class="btn-primary bookmark-add-btn" id="btnAddCustomBookmark">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14l7-3 7 3V5c0-1.1-.9-2-2-2zm0 14l-5-2.18L9 17V5h10v12z"/></svg>
+              Save Bookmark
+            </button>
+          </div>
+          <div class="bookmark-add-tip">💡 Tip: You can also click ⭐ in the toolbar while on any page to bookmark it instantly.</div>
+        </div>
+
+        <!-- Saved Bookmarks List -->
+        <div class="bookmarks-list-section">
+          <div class="bookmarks-list-title">Saved Bookmarks <span id="bookmarksCountBadge" class="bm-count-badge">0</span></div>
+          <div class="bookmarks-list" id="bookmarksList">
+            <div class="bookmarks-empty" id="bookmarksEmpty">
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              <p>No bookmarks yet</p>
+              <small>Add your favorite anime sites above or click ⭐ while browsing</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Download Progress Banner -->
+      <div class="browser-download-bar hidden" id="browserDownloadBar">
+        <div class="download-spinner"></div>
+        <div class="download-info">
+          <div class="download-title" id="browserDlFilename">Downloading episode...</div>
+          <div class="download-stats" id="browserDlStats">0% • 0 MB / 0 MB</div>
+        </div>
+        <div class="download-progress-track">
+          <div class="download-progress-fill" id="browserDlProgressFill" style="width: 0%"></div>
+        </div>
+        <div class="download-banner-actions">
+          <button class="btn-banner-action" id="btnBannerPauseResume" title="Pause / Resume Download">⏸️ Pause</button>
+          <button class="btn-banner-action btn-banner-cancel" id="btnBannerCancel" title="Cancel Download">✕</button>
+          <button class="btn-text-sm" id="btnOpenDlDrawerFromBanner">View All</button>
+        </div>
+      </div>
+
+      <!-- In-App Downloads Monitor Drawer -->
+      <div class="browser-downloads-drawer hidden" id="browserDownloadsDrawer">
+        <div class="drawer-header">
+          <div class="drawer-title-group">
+            <h4>📥 Downloads Manager</h4>
+            <span class="drawer-subtitle" id="browserDlActiveSummary">0 active • 0 completed</span>
+          </div>
+          <div class="drawer-actions">
+            <div class="dl-concurrency-wrapper" title="Max concurrent active downloads (others will wait in queue)">
+              <label for="selectDlConcurrency">Max Active:</label>
+              <select id="selectDlConcurrency" class="dl-concurrency-select">
+                <option value="1">1</option>
+                <option value="2" selected>2</option>
+                <option value="3">3</option>
+                <option value="5">5</option>
+                <option value="0">∞</option>
+              </select>
+            </div>
+            <button class="btn-text-sm" id="btnClearCompletedDl" title="Clear completed downloads from list">Clear Finished</button>
+            <button class="drawer-close-btn" id="btnCloseDlDrawer" title="Close Downloads Drawer">✕</button>
+          </div>
+        </div>
+        <div class="drawer-body" id="browserDlItemsList">
+          <div class="dl-empty-state" id="dlEmptyState">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <p>No active or recent downloads</p>
+            <small>Direct video links and torrents will be tracked here and organized into series folders</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Webview Container -->
+      <div class="browser-webview-wrapper">
+        <webview id="inAppWebview"
+                 src="https://nyaa.si"
+                 partition="persist:animeopen_browser"
+                 allowpopups>
+        </webview>
+        <div class="browser-loading-bar hidden" id="browserLoadingBar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Mini Browser Dock (shown when browser is running in background) -->
+  <div class="floating-browser-dock hidden" id="floatingBrowserDock" title="Click to resume in-app browser without reloading">
+    <div class="dock-pulse-dot"></div>
+    <span class="dock-text" id="floatingBrowserDockText">🌐 In-App Browser</span>
+    <span class="dock-badge hidden" id="floatingBrowserDlBadge">0 DL</span>
+    <span class="dock-arrow">➔</span>
+  </div>
+
+  <!-- Refresh Download Link Modal -->
+  <div class="modal-overlay hidden" id="refreshLinkModal">
+    <div class="modal-card" style="max-width:540px">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:1.3rem;">🔗</span>
+          <div>
+            <h3 style="margin:0;font-size:1.05rem;">Refresh Download Link</h3>
+            <span style="font-size:0.75rem;color:var(--text-muted);display:block;margin-top:2px;" id="refreshLinkFilename">Updating download link</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btnCloseRefreshLink">&times;</button>
+      </div>
+      <div class="modal-body" style="gap:14px;display:flex;flex-direction:column;">
+        <p style="font-size:0.82rem;color:var(--text-muted);margin:0;line-height:1.45;">
+          Download links for anime episodes and releases often expire after an hour or two.
+          Paste the updated direct download URL or magnet link below to resume/restart this download into your series folder:
+        </p>
+        <div class="form-group" style="display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:0.78rem;font-weight:600;color:var(--text-main);">New / Refreshed Download URL or Magnet:</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="refreshLinkInput" placeholder="https://... or magnet:?xt=..." style="flex:1;background:rgba(0,0,0,0.35);border:1px solid var(--border-subtle);border-radius:6px;padding:8px 12px;color:#fff;font-size:0.85rem;" />
+            <button class="btn-secondary" id="btnPasteRefreshLink" title="Paste from Clipboard" style="padding:0 12px;font-size:0.8rem;white-space:nowrap;">📋 Paste</button>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px;">
+          <button class="btn-secondary" id="btnCancelRefreshLink">Cancel</button>
+          <button class="btn-primary" id="btnConfirmRefreshLink">Update & Download</button>
+        </div>
+      </div>
+  <!-- RSS Subscriptions & Auto-Episode Downloader Modal -->
+  <div class="modal-overlay hidden" id="rssModal">
+    <div class="modal-card" style="max-width:680px">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:1.3rem;">📡</span>
+          <div>
+            <h3 style="margin:0;font-size:1.05rem;">Auto-Episode Downloader (RSS Feeds)</h3>
+            <span style="font-size:0.75rem;color:var(--text-muted);display:block;margin-top:2px;">Monitors airing anime & automatically downloads new episodes directly into your library series folders</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btnCloseRssModal">&times;</button>
+      </div>
+      <div class="modal-body" style="gap:16px;display:flex;flex-direction:column;max-height:75vh;overflow-y:auto;">
+        <!-- Add Subscription Box -->
+        <div class="rss-add-box" style="background:rgba(255,255,255,0.03);border:1px solid var(--border-subtle);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px;">
+          <span style="font-size:0.85rem;font-weight:600;color:var(--text-main);">➕ Subscribe to Airing Anime</span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="text" id="rssInputTitle" placeholder="Anime Title (e.g. Frieren, Solo Leveling, Dandadan)..." style="flex:2;min-width:200px;background:rgba(0,0,0,0.3);border:1px solid var(--border-subtle);border-radius:6px;padding:8px 12px;color:#fff;font-size:0.85rem;" />
+            <select id="rssSelectQuality" style="flex:1;min-width:100px;background:rgba(0,0,0,0.3);border:1px solid var(--border-subtle);border-radius:6px;padding:8px 12px;color:#fff;font-size:0.85rem;">
+              <option value="1080p" selected>1080p HD</option>
+              <option value="720p">720p</option>
+              <option value="">Any Quality</option>
+            </select>
+            <button class="btn-primary" id="btnRssAddSub" style="white-space:nowrap;padding:8px 16px;">Subscribe</button>
+          </div>
+        </div>
+
+        <!-- Subscriptions List Header & Check Now Button -->
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:0.85rem;font-weight:600;color:var(--text-muted);" id="rssSubsCount">Active Subscriptions (0)</span>
+          <button class="btn-secondary" id="btnRssCheckNow" style="font-size:0.75rem;padding:4px 10px;gap:6px;">
+            🔄 Check Feeds Now
+          </button>
+        </div>
+
+        <!-- Subscriptions Cards List -->
+        <div id="rssSubscriptionsList" style="display:flex;flex-direction:column;gap:8px;min-height:80px;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Online Subtitle Downloader Modal -->
+  <div class="modal-overlay hidden" id="onlineSubtitlesModal">
+    <div class="modal-card" style="max-width:620px">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:1.3rem;">🌐</span>
+          <div>
+            <h3 style="margin:0;font-size:1.05rem;">Search & Download Subtitles Online</h3>
+            <span style="font-size:0.75rem;color:var(--text-muted);display:block;margin-top:2px;" id="onlineSubSearchSubtitle">Anime Subtitle Archive</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btnCloseOnlineSubModal">&times;</button>
+      </div>
+      <div class="modal-body" style="gap:14px;display:flex;flex-direction:column;max-height:75vh;overflow-y:auto;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input type="text" id="onlineSubQueryInput" placeholder="Anime Series Name..." style="flex:3;min-width:180px;background:rgba(0,0,0,0.3);border:1px solid var(--border-subtle);border-radius:6px;padding:8px 12px;color:#fff;font-size:0.85rem;" />
+          <input type="number" id="onlineSubEpInput" placeholder="Ep #" min="1" max="999" style="width:75px;background:rgba(0,0,0,0.3);border:1px solid var(--border-subtle);border-radius:6px;padding:8px 10px;color:#fff;font-size:0.85rem;" />
+          <button class="btn-primary" id="btnExecuteSubSearch" style="white-space:nowrap;padding:8px 16px;">Search</button>
+        </div>
+
+        <div id="onlineSubResultsList" style="display:flex;flex-direction:column;gap:8px;min-height:100px;">
+          <!-- Dynamically populated with subtitles -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="userGuideModal">
+    <div class="modal-card guide-modal-card">
+      <div class="guide-header">
+        <div class="guide-brand">
+          <span class="guide-logo">🌸</span>
+          <div>
+            <h3>Welcome to AnimeOpen</h3>
+            <span class="guide-subtitle">Your Complete Quick-Start & Feature Guide</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btnCloseUserGuide">&times;</button>
+      </div>
+
+      <div class="guide-body">
+        <div class="guide-grid">
+          <!-- Step 1 -->
+          <div class="guide-step-card">
+            <div class="step-badge-row">
+              <span class="step-num">01</span>
+              <span class="step-icon">📁</span>
+            </div>
+            <h4>Load Any Anime Folder</h4>
+            <p>AnimeOpen scans your local drives for video files (<code>.mkv</code>, <code>.mp4</code>) and even streams anime stored directly inside <code>.zip</code> archives without unzipping.</p>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="guide-step-card">
+            <div class="step-badge-row">
+              <span class="step-num">02</span>
+              <span class="step-icon">✨</span>
+            </div>
+            <h4>Automated AniList HD Art</h4>
+            <p>Automatically retrieves HD covers, banner backdrops, voice actor showcases, airing countdowns, and theme songs. Artwork is cached locally on disk so it works offline forever.</p>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="guide-step-card">
+            <div class="step-badge-row">
+              <span class="step-num">03</span>
+              <span class="step-icon">🎬</span>
+            </div>
+            <h4>Cinematic Streaming & AniSkip</h4>
+            <p>True HTTP 206 instant seeking across multi-gigabyte files, automated opening/ending skipping, audio/subtitle track selector, and 1-click external player launch (VLC/MPV).</p>
+          </div>
+
+          <!-- Step 4 -->
+          <div class="guide-step-card">
+            <div class="step-badge-row">
+              <span class="step-num">04</span>
+              <span class="step-icon">🌐</span>
+            </div>
+            <h4>In-App Browser & Torrents</h4>
+            <p>Direct download & built-in WebTorrent engine. Downloads automatically create and save episodes into organized series subfolders (e.g. <code>D:\Anime\Frieren\</code>).</p>
+          </div>
+
+          <!-- Step 5 -->
+          <div class="guide-step-card">
+            <div class="step-badge-row">
+              <span class="step-num">05</span>
+              <span class="step-icon">🎨</span>
+            </div>
+            <h4>6 Themes & Multitasking</h4>
+            <p>Switch between Midnight OLED, Cyberpunk Neo-Tokyo, Sakura Bloom, and more. Multitask freely between the browser and library with zero page reloads.</p>
+          </div>
+
+          <!-- Step 6 -->
+          <div class="guide-step-card">
+            <div class="step-badge-row">
+              <span class="step-num">06</span>
+              <span class="step-icon">⌨️</span>
+            </div>
+            <h4>Essential Shortcuts</h4>
+            <p><kbd>Space</kbd> Play/Pause • <kbd>←</kbd>/<kbd>→</kbd> Seek 10s • <kbd>↑</kbd>/<kbd>↓</kbd> Volume • <kbd>S</kbd> Screenshot Frame • <kbd>F</kbd> Fullscreen • <kbd>M</kbd> Mute</p>
+          </div>
+        </div>
+
+        <!-- Creator Developer Signature Banner -->
+        <div class="guide-creator-banner">
+          <div class="creator-badge">DEVELOPER SPOTLIGHT</div>
+          <div class="creator-details">
+            <div class="creator-sparkle">👑</div>
+            <div class="creator-info">
+              <span class="creator-title">Architected & Engineered for Anime Enthusiasts Worldwide</span>
+              <h2 class="creator-signature">developed by chisha k chisha</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class="guide-actions">
+          <button class="btn-primary btn-large" id="btnStartExploring">
+            🚀 Get Started with AnimeOpen
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Toast Notifications -->
+  <div id="appToast" class="app-toast"></div>
+
+  <!-- Application Scripts -->
+  <script src="js/metadata.js"></script>
+  <script src="js/scanner.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
