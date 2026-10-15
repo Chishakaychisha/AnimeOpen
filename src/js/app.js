@@ -17,12 +17,14 @@ class AnimeApp {
     };
 
     this.animeList = [];
+    this.cinemaList = [];
     this.filteredList = [];
     this.selectedAnime = null;
     this.activeGenre = 'ALL';
     this.activeStatus = 'ALL';
     this.searchQuery = '';
     this.sortBy = 'recent';
+    this.currentMode = 'anime';
 
     this.ui = new AnimeUI(this);
     this.player = new AnimePlayer(this);
@@ -60,7 +62,11 @@ class AnimeApp {
     if (window.api?.onLibraryFolderChanged) {
       window.api.onLibraryFolderChanged(async (data) => {
         this.ui.showToast(`📁 Live Sync: Detected ${data.action} of "${data.filename}". Updating library...`);
-        await this.scanLibrary(false);
+        if (this.currentMode === 'cinema') {
+          await this.scanCinemaLibrary(false);
+        } else {
+          await this.scanLibrary(false);
+        }
       });
     }
 
@@ -68,15 +74,19 @@ class AnimeApp {
     if (window.api?.onRssNewEpisode) {
       window.api.onRssNewEpisode(async (data) => {
         this.ui.showToast(`🎉 Auto-downloaded [${data.title}] - Ep ${data.episode}! Added to your library.`);
-        await this.scanLibrary(false);
+        if (this.currentMode === 'anime') {
+          await this.scanLibrary(false);
+        }
       });
     }
 
     // Load persisted store
     this.store = await window.api.getStore();
+    this.currentMode = this.store.activeLibraryMode || 'anime';
     this.initWallpaperSettings();
     this.applyTheme(this.store.theme || 'oled');
     this.bindThemeSelector();
+    this.bindModeSwitcher();
     this.inAppBrowser?.initBookmarks();
 
     // Global Escape key handler to close any active modal or panel
@@ -93,11 +103,21 @@ class AnimeApp {
       this.showUserGuide();
     }
 
-    if (this.store.libraryFolder) {
-      document.getElementById('currentFolderPathDisplay').textContent = this.store.libraryFolder;
-      await this.scanLibrary();
+    if (this.currentMode === 'cinema') {
+      const activeFolder = this.store.cinemaFolder || this.store.libraryFolder;
+      if (activeFolder) {
+        document.getElementById('currentFolderPathDisplay').textContent = activeFolder;
+        await this.scanCinemaLibrary();
+      } else {
+        this.ui.renderLibrary([]);
+      }
     } else {
-      this.ui.renderLibrary([]);
+      if (this.store.libraryFolder) {
+        document.getElementById('currentFolderPathDisplay').textContent = this.store.libraryFolder;
+        await this.scanLibrary();
+      } else {
+        this.ui.renderLibrary([]);
+      }
     }
   }
 
@@ -571,15 +591,16 @@ class AnimeApp {
     const genreContainer = document.getElementById('genreFilterContainer');
     if (!genreContainer) return;
 
+    const sourceList = this.currentMode === 'cinema' ? this.cinemaList : this.animeList;
     const genresSet = new Set();
-    this.animeList.forEach(anime => {
-      (anime.metadata?.genres || []).forEach(g => genresSet.add(g));
+    sourceList.forEach(item => {
+      (item.metadata?.genres || []).forEach(g => genresSet.add(g));
     });
 
     const active = this.activeGenre;
-    genreContainer.innerHTML = `<button class="filter-pill ${active === 'ALL' ? 'active' : ''}" data-genre="ALL">All Anime</button>`;
+    genreContainer.innerHTML = `<button class="filter-pill ${active === 'ALL' ? 'active' : ''}" data-genre="ALL">All ${this.currentMode === 'cinema' ? 'Genres' : 'Anime'}</button>`;
 
-    Array.from(genresSet).sort().slice(0, 10).forEach(genre => {
+    Array.from(genresSet).sort().slice(0, 12).forEach(genre => {
       const btn = document.createElement('button');
       btn.className = `filter-pill ${active === genre ? 'active' : ''}`;
       btn.dataset.genre = genre;
@@ -589,31 +610,41 @@ class AnimeApp {
   }
 
   applyFilters() {
-    let result = [...this.animeList];
+    const sourceList = this.currentMode === 'cinema' ? this.cinemaList : this.animeList;
+    let result = [...sourceList];
 
     // Search query
     if (this.searchQuery) {
-      result = result.filter(anime => {
-        const title = (anime.metadata?.title || anime.title).toLowerCase();
-        const romaji = (anime.metadata?.romajiTitle || '').toLowerCase();
-        const raw = anime.rawTitle.toLowerCase();
-        return title.includes(this.searchQuery) || romaji.includes(this.searchQuery) || raw.includes(this.searchQuery);
+      result = result.filter(item => {
+        const title = (item.metadata?.title || item.title).toLowerCase();
+        const romaji = (item.metadata?.romajiTitle || '').toLowerCase();
+        const raw = (item.rawTitle || '').toLowerCase();
+        const year = (item.year || item.metadata?.year || '').toString();
+        const genres = (item.metadata?.genres || []).join(' ').toLowerCase();
+        const fileMatch = (item.episodes || []).some(ep => (ep.fileName || '').toLowerCase().includes(this.searchQuery));
+        return title.includes(this.searchQuery) || romaji.includes(this.searchQuery) || raw.includes(this.searchQuery) || year.includes(this.searchQuery) || genres.includes(this.searchQuery) || fileMatch;
       });
     }
 
     // Genre filter
     if (this.activeGenre !== 'ALL') {
-      result = result.filter(anime => {
-        return (anime.metadata?.genres || []).includes(this.activeGenre);
+      result = result.filter(item => {
+        return (item.metadata?.genres || []).some(g => g.toLowerCase() === this.activeGenre.toLowerCase());
       });
     }
 
-    // Watch status filter (Watching, Completed, Plan to Watch)
+    // Watch status or Type filter (MOVIE vs TV for cinema, WATCHING/COMPLETED for anime)
     if (this.activeStatus !== 'ALL') {
-      result = result.filter(anime => {
-        const status = this.store.animeWatchStatus?.[anime.id] || 'WATCHING';
-        return status === this.activeStatus;
-      });
+      if (this.activeStatus === 'MOVIE') {
+        result = result.filter(item => item.type === 'MOVIE' || item.isMovie);
+      } else if (this.activeStatus === 'TV') {
+        result = result.filter(item => item.type === 'TV' || item.isTv);
+      } else {
+        result = result.filter(item => {
+          const status = this.store.animeWatchStatus?.[item.id] || 'WATCHING';
+          return status === this.activeStatus;
+        });
+      }
     }
 
     // Sorting
@@ -641,7 +672,8 @@ class AnimeApp {
 
   getContinueWatchingList() {
     const list = [];
-    for (const anime of this.animeList) {
+    const sourceList = this.currentMode === 'cinema' ? this.cinemaList : this.animeList;
+    for (const anime of sourceList) {
       if (!anime.episodes || anime.episodes.length === 0) continue;
 
       let inProgressEp = null;
@@ -970,6 +1002,236 @@ class AnimeApp {
         }
       };
     }
+  }
+
+  bindModeSwitcher() {
+    const btnAnime = document.getElementById('modeBtnAnime');
+    const btnCinema = document.getElementById('modeBtnCinema');
+    const brandTitle = document.getElementById('appBrandTitle');
+    const searchInput = document.getElementById('searchAnimeInput');
+    const changeFolderCinemaBtn = document.getElementById('btnSettingsChangeCinemaFolder');
+
+    const setMode = async (mode) => {
+      this.currentMode = mode;
+      this.store.activeLibraryMode = mode;
+      await window.api.saveStore(this.store);
+
+      if (mode === 'anime') {
+        btnAnime?.classList.add('active');
+        btnCinema?.classList.remove('active');
+        if (brandTitle) brandTitle.innerHTML = 'ANIME<span class="brand-gradient">OPEN</span>';
+        if (searchInput) searchInput.placeholder = 'Search anime title, romaji or file...';
+        document.getElementById('currentFolderPathDisplay').textContent = this.store.libraryFolder || 'No folder selected';
+        this.updateStatusFiltersForMode('anime');
+        this.populateGenreFilters();
+        this.applyFilters();
+        if (this.animeList.length === 0 && this.store.libraryFolder) {
+          await this.scanLibrary();
+        }
+      } else {
+        btnCinema?.classList.add('active');
+        btnAnime?.classList.remove('active');
+        if (brandTitle) brandTitle.innerHTML = 'CINEMA<span class="brand-gradient" style="background:linear-gradient(135deg, #00c8ff 0%, #7000ff 100%);-webkit-background-clip:text;background-clip:text;">OPEN</span>';
+        if (searchInput) searchInput.placeholder = 'Search movies, TV shows, actors, or release year...';
+        const activeFolder = this.store.cinemaFolder || this.store.libraryFolder || 'No folder selected';
+        document.getElementById('currentFolderPathDisplay').textContent = activeFolder;
+        this.updateStatusFiltersForMode('cinema');
+
+        if (this.cinemaList.length === 0 && activeFolder && activeFolder !== 'No folder selected') {
+          await this.scanCinemaLibrary();
+        } else {
+          this.populateGenreFilters();
+          this.applyFilters();
+        }
+      }
+
+      this.ui.showToast(`Switched to ${mode === 'anime' ? '🌸 Anime' : '🎬 Movies & TV Series'} Collection`);
+    };
+
+    btnAnime?.addEventListener('click', () => setMode('anime'));
+    btnCinema?.addEventListener('click', () => setMode('cinema'));
+
+    changeFolderCinemaBtn?.addEventListener('click', async () => {
+      const folder = await window.api.selectFolder();
+      if (folder) {
+        this.store.cinemaFolder = folder;
+        await window.api.saveStore(this.store);
+        const folderEl = document.getElementById('settingsCinemaFolder');
+        if (folderEl) folderEl.textContent = folder;
+        if (this.currentMode === 'cinema') {
+          document.getElementById('currentFolderPathDisplay').textContent = folder;
+          await this.scanCinemaLibrary();
+        }
+        this.ui.showToast(`Movies & TV Shows folder set to ${folder}`);
+      }
+    });
+
+    // Sync initial switcher state from store
+    if (this.currentMode === 'cinema') {
+      btnCinema?.classList.add('active');
+      btnAnime?.classList.remove('active');
+      if (brandTitle) brandTitle.innerHTML = 'CINEMA<span class="brand-gradient" style="background:linear-gradient(135deg, #00c8ff 0%, #7000ff 100%);-webkit-background-clip:text;background-clip:text;">OPEN</span>';
+      if (searchInput) searchInput.placeholder = 'Search movies, TV shows, actors, or release year...';
+      this.updateStatusFiltersForMode('cinema');
+    }
+  }
+
+  updateStatusFiltersForMode(mode) {
+    const statusContainer = document.getElementById('statusFilterContainer');
+    if (!statusContainer) return;
+
+    if (mode === 'cinema') {
+      statusContainer.innerHTML = `
+        <button class="filter-pill active" data-status="ALL">All Titles</button>
+        <button class="filter-pill" data-status="MOVIE">🎥 Movies</button>
+        <button class="filter-pill" data-status="TV">📺 TV Shows</button>
+        <button class="filter-pill" data-status="WATCHING">👀 Watching</button>
+        <button class="filter-pill" data-status="COMPLETED">✅ Completed</button>
+      `;
+    } else {
+      statusContainer.innerHTML = `
+        <button class="filter-pill active" data-status="ALL">All Anime</button>
+        <button class="filter-pill" data-status="WATCHING">👀 Watching</button>
+        <button class="filter-pill" data-status="COMPLETED">✅ Completed</button>
+        <button class="filter-pill" data-status="PLAN_TO_WATCH">📋 Plan to Watch</button>
+      `;
+    }
+    this.activeStatus = 'ALL';
+  }
+
+  async scanCinemaLibrary(forceRefreshMetadata = false) {
+    const folder = this.store.cinemaFolder || this.store.libraryFolder;
+    if (!folder) return;
+
+    this.ui.showToast('Scanning Movies & TV Series directory...');
+    const scanSpinner = document.getElementById('scanSpinner');
+    const scanSpinnerText = scanSpinner ? scanSpinner.querySelector('span:last-child') : null;
+    if (scanSpinner) {
+      if (scanSpinnerText) scanSpinnerText.textContent = 'Scanning cinema files...';
+      scanSpinner.classList.remove('hidden');
+    }
+
+    const result = await window.api.scanLibrary(folder);
+    if (!result.success) {
+      this.ui.showToast(`Error scanning: ${result.error}`);
+      if (scanSpinner) scanSpinner.classList.add('hidden');
+      return;
+    }
+
+    // Process raw files into structured Movies and TV Series
+    this.cinemaList = this.processCinemaFiles(result.files, folder);
+
+    // Initial render with titles immediately
+    this.populateGenreFilters();
+    this.applyFilters();
+    this.ui.showToast(`Found ${this.cinemaList.length} movies & shows. Resolving metadata...`);
+
+    // Fetch Cinema metadata
+    await this.fetchMetadataForCinema(forceRefreshMetadata);
+
+    if (scanSpinner) scanSpinner.classList.add('hidden');
+  }
+
+  processCinemaFiles(files, baseFolder) {
+    const VIDEO_EXTS = ['.mkv', '.mp4', '.avi', '.webm', '.mov', '.ts'];
+    const videoFiles = files.filter(f => !f.isZipEntry && VIDEO_EXTS.includes(f.extension.toLowerCase()));
+
+    const groups = new Map();
+
+    for (const f of videoFiles) {
+      const parsed = CinemaMetadata.parseMediaName(f.fileName);
+      
+      let groupKey = '';
+      if (parsed.isTv) {
+        groupKey = 'tv_' + parsed.cleanTitle.toLowerCase();
+      } else {
+        groupKey = 'movie_' + parsed.cleanTitle.toLowerCase();
+      }
+
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, {
+          id: groupKey,
+          title: parsed.cleanTitle,
+          type: parsed.isTv ? 'TV' : 'MOVIE',
+          isTv: parsed.isTv,
+          isMovie: !parsed.isTv,
+          year: parsed.year,
+          episodes: [],
+          lastModified: f.mtime || Date.now(),
+          metadata: null
+        });
+      }
+
+      const item = groups.get(groupKey);
+      if (f.mtime && f.mtime > item.lastModified) {
+        item.lastModified = f.mtime;
+      }
+
+      item.episodes.push({
+        filePath: f.filePath,
+        fileName: f.fileName,
+        fileSize: f.size,
+        displayTitle: parsed.isTv ? `Season ${parsed.season} • Episode ${parsed.episode}` : 'Play Movie',
+        season: parsed.season,
+        episode: parsed.episode,
+        mtime: f.mtime
+      });
+    }
+
+    for (const item of groups.values()) {
+      if (item.isTv) {
+        item.episodes.sort((a, b) => {
+          if (a.season !== b.season) return a.season - b.season;
+          return a.episode - b.episode;
+        });
+      }
+      item.totalEpisodes = item.episodes.length;
+    }
+
+    return Array.from(groups.values()).sort((a, b) => b.lastModified - a.lastModified);
+  }
+
+  async fetchMetadataForCinema(forceRefresh = false) {
+    if (!this.store.cachedCinemaMetadata) this.store.cachedCinemaMetadata = {};
+
+    for (let i = 0; i < this.cinemaList.length; i++) {
+      const item = this.cinemaList[i];
+      const matchKey = item.title.toLowerCase();
+
+      let cached = this.store.cachedCinemaMetadata[matchKey];
+      if (!forceRefresh && cached) {
+        item.metadata = cached;
+        this.updateCardInDOM(item);
+        continue;
+      }
+
+      try {
+        const meta = await CinemaMetadata.resolveMetadata(item.title, item.isTv, item.year);
+        if (meta) {
+          if (meta.cover && window.api.downloadImageCache) {
+            try {
+              const cacheRes = await window.api.downloadImageCache({
+                url: meta.cover,
+                key: `cinema_${matchKey}`,
+                type: 'cover'
+              });
+              if (cacheRes.success) {
+                meta.localCover = cacheRes.localPath;
+              }
+            } catch (_) {}
+          }
+
+          item.metadata = meta;
+          this.store.cachedCinemaMetadata[matchKey] = meta;
+          await window.api.saveStore(this.store);
+          this.updateCardInDOM(item);
+        }
+      } catch (e) {
+        console.warn(`Cinema metadata resolution failed for ${item.title}:`, e.message);
+      }
+    }
+
+    this.populateGenreFilters();
   }
 
   bindBatchRenameModal() {

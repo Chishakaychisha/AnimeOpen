@@ -9,6 +9,14 @@ AnimeOpen brings a premium Netflix / Crunchyroll-grade streaming experience dire
 
 ## ✨ Features Overview
 
+### 🌸 ⟷ 🎬 Dual-Mode Switcher: Anime & Cinema / Series
+- **One-Click Instant Mode Switcher**: A header toggle pill allowing instant switching between your **Anime universe** and your live-action **Movies & TV Series collection**.
+- **Smart Movie & TV Show Parser**: Automatically detects whether video files are standalone movies or episodic TV series with season and episode numbers (`S01E02`, `1x05`, etc.).
+- **Rich Western Cinema Metadata**: Integrates TVMaze API for complete TV show episode guides, summaries, air dates, and iTunes Movie API for high-resolution 4K posters and runtimes—completely free with zero API keys required.
+- **Independent Directory Settings**: Configure separate library folders for Anime and Movies/TV Shows in Settings, or point them to the same root drive.
+
+---
+
 ### 🍿 Netflix-Style Hero Banner & Continue Watching Shelf
 
 - **Recently Added / Featured Hero Banner**: A cinematic backdrop banner at the top of your library displaying high-resolution artwork, bold title typography, release year, episode count, community ratings, AniList synopses, and a bottom-right "Recently Added" badge.

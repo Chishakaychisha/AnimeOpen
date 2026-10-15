@@ -102,9 +102,19 @@ class AnimeUI {
     const btnPlay = document.getElementById('btnHeroPlay');
     const btnInfo = document.getElementById('btnHeroInfo');
 
-    // Series title
-    const title = meta.title || featuredAnime.title || 'Unknown Anime';
+    // Series / Film title
+    const title = meta.title || featuredAnime.title || 'Unknown Title';
     if (titleEl) titleEl.textContent = title;
+
+    const isCinema = this.app.currentMode === 'cinema';
+    const typeBadgeEl = heroBanner.querySelector('.hero-badge-type');
+    if (typeBadgeEl) {
+      if (isCinema) {
+        typeBadgeEl.textContent = (featuredAnime.type === 'MOVIE' || featuredAnime.isMovie) ? 'Movie' : 'TV Series';
+      } else {
+        typeBadgeEl.textContent = 'Anime';
+      }
+    }
 
     // Meta row (Year, Episode Count, Score)
     if (yearEl) {
@@ -112,8 +122,12 @@ class AnimeUI {
       yearEl.textContent = year;
     }
     if (epCountEl) {
-      const count = featuredAnime.totalEpisodes || (featuredAnime.episodes ? featuredAnime.episodes.length : 1);
-      epCountEl.textContent = `${count} ${count === 1 ? 'Episode' : 'Episodes'}`;
+      if (featuredAnime.type === 'MOVIE' || featuredAnime.isMovie) {
+        epCountEl.textContent = meta.runtime || 'Feature Film';
+      } else {
+        const count = featuredAnime.totalEpisodes || (featuredAnime.episodes ? featuredAnime.episodes.length : 1);
+        epCountEl.textContent = `${count} ${count === 1 ? 'Episode' : 'Episodes'}`;
+      }
     }
     if (scoreEl) {
       if (meta.score) {
@@ -147,7 +161,9 @@ class AnimeUI {
         backdropEl.style.backgroundImage = `url('${bannerUrl}')`;
         backdropEl.style.backgroundColor = 'transparent';
       } else {
-        const fallback = AnimeMetadata.getFallbackPoster(title);
+        const fallback = isCinema
+          ? CinemaMetadata.getFallbackCinemaPoster(title)
+          : AnimeMetadata.getFallbackPoster(title);
         backdropEl.style.backgroundImage = 'none';
         backdropEl.style.background = fallback.gradient;
       }
@@ -196,16 +212,30 @@ class AnimeUI {
     card.className = 'anime-card';
     card.dataset.id = anime.id;
 
+    const isCinema = this.app.currentMode === 'cinema';
     const meta = anime.metadata || {};
     // Prefer locally cached cover if available
     const coverUrl = meta.localCover
       ? window.api.getLocalImageUrl(meta.localCover)
       : meta.cover;
-    const fallback = AnimeMetadata.getFallbackPoster(anime.title);
+    const fallback = isCinema
+      ? CinemaMetadata.getFallbackCinemaPoster(anime.title)
+      : AnimeMetadata.getFallbackPoster(anime.title);
     const score = meta.score ? `<div class="card-badge score-badge">★ ${meta.score}</div>` : '';
-    const format = meta.format ? `<div class="card-badge format-badge">${meta.format}</div>` : '';
+    
+    let format = '';
+    if (anime.type === 'MOVIE' || anime.isMovie) {
+      format = `<div class="card-badge format-badge movie-badge" style="background:rgba(0, 200, 255, 0.25);color:#00e5ff;border:1px solid rgba(0, 200, 255, 0.45);font-weight:700;">🎬 MOVIE</div>`;
+    } else if (anime.type === 'TV' || anime.isTv) {
+      format = `<div class="card-badge format-badge tv-badge" style="background:rgba(181, 55, 242, 0.25);color:#da77f2;border:1px solid rgba(181, 55, 242, 0.45);font-weight:700;">📺 TV SHOW</div>`;
+    } else if (meta.format) {
+      format = `<div class="card-badge format-badge">${meta.format}</div>`;
+    }
+
     const zipBadge = anime.hasZip ? `<div class="card-badge zip-badge">📦 ZIP</div>` : '';
-    const epCount = `${anime.totalEpisodes} ${anime.totalEpisodes === 1 ? 'EP' : 'EPS'}`;
+    const epCount = (anime.type === 'MOVIE' || anime.isMovie)
+      ? (meta.runtime || 'Feature Film')
+      : `${anime.totalEpisodes} ${anime.totalEpisodes === 1 ? 'EP' : 'EPS'}`;
 
     let coverHtml = '';
     if (coverUrl) {
@@ -359,30 +389,43 @@ class AnimeUI {
       genresList.appendChild(g);
     });
 
-    // Episodes
-    epCountBadge.textContent = `${anime.episodes.length} Episodes available`;
-    episodesList.innerHTML = '';
+    // Episodes or Movie Play
+    const isMovie = anime.type === 'MOVIE' || anime.isMovie;
+    if (isMovie) {
+      epCountBadge.textContent = meta.runtime || 'Feature Film';
+    } else {
+      epCountBadge.textContent = `${anime.episodes.length} Episodes available`;
+    }
 
+    episodesList.innerHTML = '';
     anime.episodes.forEach((episode, index) => {
       const epRow = this.createEpisodeRow(anime, episode, index);
       episodesList.appendChild(epRow);
     });
 
-    // Resume or Play First Episode button
+    // Resume or Play button
     const btnPlayNext = document.getElementById('btnDetailPlayFirst');
-    const historyEp = this.app.getSuggestedNextEpisode(anime);
-    if (historyEp) {
+    if (isMovie && anime.episodes.length > 0) {
       btnPlayNext.innerHTML = `
         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-        Resume ${historyEp.displayTitle}
-      `;
-      btnPlayNext.onclick = () => this.app.player.loadEpisode(anime, historyEp);
-    } else if (anime.episodes.length > 0) {
-      btnPlayNext.innerHTML = `
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-        Play Episode 1
+        Play Movie
       `;
       btnPlayNext.onclick = () => this.app.player.loadEpisode(anime, anime.episodes[0]);
+    } else {
+      const historyEp = this.app.getSuggestedNextEpisode(anime);
+      if (historyEp) {
+        btnPlayNext.innerHTML = `
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          Resume ${historyEp.displayTitle}
+        `;
+        btnPlayNext.onclick = () => this.app.player.loadEpisode(anime, historyEp);
+      } else if (anime.episodes.length > 0) {
+        btnPlayNext.innerHTML = `
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          Play Episode 1
+        `;
+        btnPlayNext.onclick = () => this.app.player.loadEpisode(anime, anime.episodes[0]);
+      }
     }
 
     // Open in folder button

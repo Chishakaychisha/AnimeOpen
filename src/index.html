@@ -42,7 +42,19 @@
             <circle class="ao-orb" cx="60" cy="68" r="13" fill="url(#brandOrbGrad)"/>
           </svg>
         </div>
-        <span class="brand-text">ANIME<span class="brand-gradient">OPEN</span></span>
+        <span class="brand-text" id="appBrandTitle">ANIME<span class="brand-gradient">OPEN</span></span>
+      </div>
+
+      <!-- Dual-Mode Switcher: Anime vs Cinema & TV Series -->
+      <div class="library-mode-switcher" id="libraryModeSwitcher">
+        <button class="mode-switch-btn active" data-mode="anime" id="modeBtnAnime" title="Switch to Anime Collection">
+          <span class="mode-icon">🌸</span>
+          <span class="mode-text">Anime</span>
+        </button>
+        <button class="mode-switch-btn" data-mode="cinema" id="modeBtnCinema" title="Switch to Movies & TV Series">
+          <span class="mode-icon">🎬</span>
+          <span class="mode-text">Movies & Shows</span>
+        </button>
       </div>
 
       <div class="titlebar-folder-info" id="btnQuickFolderSelect" title="Click to change folder">
@@ -609,10 +621,19 @@
 
         <!-- Anime Library Directory -->
         <div class="setting-item">
-          <label>Anime Library Directory</label>
+          <label>🌸 Anime Library Directory</label>
           <div class="setting-folder-box">
             <span class="folder-path-text" id="settingsCurrentFolder">None selected</span>
             <button class="btn-secondary" id="btnSettingsChangeFolder">Change Folder</button>
+          </div>
+        </div>
+
+        <!-- Movies & TV Shows Directory -->
+        <div class="setting-item">
+          <label>🎬 Movies & TV Shows Directory</label>
+          <div class="setting-folder-box">
+            <span class="folder-path-text" id="settingsCinemaFolder">None selected (or same as Anime folder)</span>
+            <button class="btn-secondary" id="btnSettingsChangeCinemaFolder">Change Folder</button>
           </div>
         </div>
 
@@ -1309,6 +1330,7 @@
 
   <!-- Application Scripts -->
   <script src="js/metadata.js"></script>
+  <script src="js/cinemaMetadata.js"></script>
   <script src="js/scanner.js"></script>
   <script src="js/player.js"></script>
   <script src="js/ui.js"></script>

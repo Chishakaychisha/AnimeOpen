@@ -35,8 +35,11 @@ function loadStore() {
   }
   return {
     libraryFolder: '',
+    cinemaFolder: '',
+    activeLibraryMode: 'anime',
     watchHistory: {}, // { [episodePath]: { progress: 0, duration: 0, lastWatched: timestamp, completed: boolean } }
     cachedMetadata: {}, // { [cleanedTitle]: { animeData } }
+    cachedCinemaMetadata: {}, // { [cleanTitle]: { movie/tv Data } }
     customMatches: {}, // { [folderName]: animeId }
     autoStart: false,
     rssSubscriptions: [], // [ { title, quality, lastDownloadedEp, enabled, folder } ]
