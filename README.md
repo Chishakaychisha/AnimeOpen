@@ -10,6 +10,7 @@ AnimeOpen brings a premium Netflix / Crunchyroll-grade streaming experience dire
 ## ✨ Features Overview
 
 ### 🍿 Netflix-Style Hero Banner & Continue Watching Shelf
+
 - **Recently Added / Featured Hero Banner**: A cinematic backdrop banner at the top of your library displaying high-resolution artwork, bold title typography, release year, episode count, community ratings, AniList synopses, and a bottom-right "Recently Added" badge.
 - **1-Click Hero Resume**: Prominent white pill `▶ Play` button to jump straight into your in-progress episode or launch Episode 1 instantly, plus a glass pill `ℹ More Info` button.
 - **Dedicated Continue Watching Carousel**: A Netflix-style horizontal scroll shelf (`overflow-x: auto`) positioned directly beneath the hero banner with real-time percentage progress bars, episode badges, and 1-click resume cards.
@@ -17,6 +18,7 @@ AnimeOpen brings a premium Netflix / Crunchyroll-grade streaming experience dire
 ---
 
 ### 📡 Offline Local LAN Peer Sharing (No Internet Needed)
+
 - **Local Network Sharing**: Stream and share anime with friends on the same Wi-Fi or Ethernet network completely offline without internet data usage.
 - **Auto Peer Discovery (UDP Multicast)**: Automatically discovers nearby AnimeOpen instances on your local subnet using zero-configuration UDP beacons (`239.255.255.250`).
 - **Direct LAN HTTP Streaming**: High-speed, random-access HTTP range streaming directly from your friend's laptop or desktop storage.
@@ -25,13 +27,16 @@ AnimeOpen brings a premium Netflix / Crunchyroll-grade streaming experience dire
 ---
 
 ### ⚡ Live Automation & RSS Downloader
+
 - **Real-Time Folder Watcher**: Automatically detects newly added, moved, or deleted video files on your disk in real time with instant library indexing—no need to manually click "Rescan Library".
 - **Automated RSS Episode Downloader**: Subscribe to your favorite currently airing anime via RSS feeds (SubsPlease, Nyaa.si). AnimeOpen checks for new episode releases in the background and auto-downloads them directly into the appropriate series folder as soon as they air.
 
 ---
 
 ### 🎨 6 Handcrafted Aesthetic Themes
+
 Switch themes instantly from **Settings** (⚙️) with real-time preview and persistence:
+
 - **Midnight OLED (Abyss)** — Pitch black (`#000000`), cold slate surfaces, and neon pink/violet accents.
 - **Cyberpunk Neo-Tokyo** — High-contrast neon cyan (`#00f0ff`) and electric magenta (`#ff0055`) glow.
 - **Sakura Bloom** — Cherry blossom dark palette with soft rose petal (`#ff6fa9`) and royal lavender (`#b537f2`).
@@ -42,6 +47,7 @@ Switch themes instantly from **Settings** (⚙️) with real-time preview and pe
 ---
 
 ### 🎬 Cinematic Streaming Player
+
 - **HTTP 206 Partial Content Streaming (`anime-media://`)**: True random-access streaming allowing instantaneous seeking and skipping across multi-gigabyte video files.
 - **Dual-Audio & Subtitle Track Selectors**: Dynamic menus for switching Japanese/English language audio tracks and subtitle streams.
 - **Subtitle Sync & Timing Offset**: Fine-tune external subtitle timing (`-0.5s` / `+0.5s` increments) directly within the player controls for out-of-sync subtitle files.
@@ -58,6 +64,7 @@ Switch themes instantly from **Settings** (⚙️) with real-time preview and pe
 ---
 
 ### 📚 Smart Library & Metadata
+
 - **Dynamic Folder Selection**: Remembers your preferred anime library folder across launches without any hardcoded paths.
 - **AniList HD Metadata**: Automatically pulls HD cover art, banner backdrops, genre tags, synopses, studio information, and community ratings.
 - **Manual Metadata & Artwork Editor**: If an obscure anime isn't matched or you want custom art, use the **"✏️ Edit Details"** tool to set custom titles, covers, descriptions, year, and scores.
@@ -84,34 +91,37 @@ Switch themes instantly from **Settings** (⚙️) with real-time preview and pe
 
 ## ⌨️ Keyboard Shortcuts
 
-| Shortcut | Action |
-| :--- | :--- |
-| <kbd>Space</kbd> or <kbd>K</kbd> | Play / Pause |
-| <kbd>→</kbd> or <kbd>L</kbd> | Seek forward 10 seconds |
-| <kbd>←</kbd> or <kbd>J</kbd> | Seek backward 10 seconds |
-| <kbd>↑</kbd> / <kbd>↓</kbd> | Volume up / down (10% increments) |
-| <kbd>M</kbd> | Mute / Unmute audio |
-| <kbd>S</kbd> | Capture Screenshot (Saved to Pictures + Copied to Clipboard) |
-| <kbd>N</kbd> | Next Episode |
-| <kbd>P</kbd> | Previous Episode |
-| <kbd>[</kbd> / <kbd>]</kbd> | Adjust Subtitle Timing (-0.5s / +0.5s offset) |
-| <kbd>F</kbd> | Toggle Fullscreen |
-| <kbd>Esc</kbd> | Exit Fullscreen / Close Player |
+| Shortcut                         | Action                                                       |
+| :------------------------------- | :----------------------------------------------------------- |
+| <kbd>Space</kbd> or <kbd>K</kbd> | Play / Pause                                                 |
+| <kbd>→</kbd> or <kbd>L</kbd>     | Seek forward 10 seconds                                      |
+| <kbd>←</kbd> or <kbd>J</kbd>     | Seek backward 10 seconds                                     |
+| <kbd>↑</kbd> / <kbd>↓</kbd>      | Volume up / down (10% increments)                            |
+| <kbd>M</kbd>                     | Mute / Unmute audio                                          |
+| <kbd>S</kbd>                     | Capture Screenshot (Saved to Pictures + Copied to Clipboard) |
+| <kbd>N</kbd>                     | Next Episode                                                 |
+| <kbd>P</kbd>                     | Previous Episode                                             |
+| <kbd>[</kbd> / <kbd>]</kbd>      | Adjust Subtitle Timing (-0.5s / +0.5s offset)                |
+| <kbd>F</kbd>                     | Toggle Fullscreen                                            |
+| <kbd>Esc</kbd>                   | Exit Fullscreen / Close Player                               |
 
 ---
 
 ## 🛠️ Development & Building
 
 ### Running Locally
+
 ```bash
 npm install
 npm start
 ```
 
 ### Creating Windows Installer (.exe)
+
 ```bash
 npm run build:win
 ```
+
 The output installer (`AnimeOpen Setup 1.0.0.exe`) will be generated inside the `dist/` directory.
 
 ---
@@ -119,5 +129,5 @@ The output installer (`AnimeOpen Setup 1.0.0.exe`) will be generated inside the 
 ## 👨‍💻 Author
 
 **Chisha K. Chisha**  
-*Zambian Web & Software Developer with a passion for anime.*  
+_Zambian Web & Software Developer with a passion for anime._  
 Made to make watching and organizing anime collections effortless and beautiful. Enjoy!

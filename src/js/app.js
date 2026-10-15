@@ -1,6 +1,11 @@
-/**
- * Main Application Controller for AnimeOpen
- */
+const THEME_WALLPAPERS = {
+  oled: 'assets/wallpapers/oled.svg',
+  cyberpunk: 'assets/wallpapers/cyberpunk.jpg',
+  sakura: 'assets/wallpapers/sakura.jpg',
+  emerald: 'assets/wallpapers/emerald.jpg',
+  bloodmoon: 'assets/wallpapers/bloodmoon.svg',
+  sunset: 'assets/wallpapers/sunset.svg'
+};
 
 class AnimeApp {
   constructor() {
@@ -69,6 +74,7 @@ class AnimeApp {
 
     // Load persisted store
     this.store = await window.api.getStore();
+    this.initWallpaperSettings();
     this.applyTheme(this.store.theme || 'oled');
     this.bindThemeSelector();
     this.inAppBrowser?.initBookmarks();
@@ -866,6 +872,104 @@ class AnimeApp {
 
   applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
+    this.updateWallpaper(theme);
+  }
+
+  updateWallpaper(theme) {
+    let wallpaperUrl = '';
+    if (this.store.customWallpaper) {
+      wallpaperUrl = window.api.getLocalImageUrl(this.store.customWallpaper);
+    } else {
+      wallpaperUrl = THEME_WALLPAPERS[theme] || THEME_WALLPAPERS.oled;
+    }
+    this.transitionWallpaper(wallpaperUrl);
+  }
+
+  transitionWallpaper(newUrl) {
+    const layerA = document.getElementById('wallpaperLayerA');
+    const layerB = document.getElementById('wallpaperLayerB');
+    if (!layerA || !layerB) return;
+
+    const isALayerActive = layerA.classList.contains('active');
+    const incoming = isALayerActive ? layerB : layerA;
+    const outgoing = isALayerActive ? layerA : layerB;
+
+    const img = new Image();
+    img.src = newUrl;
+    img.onload = () => {
+      incoming.style.backgroundImage = `url('${newUrl}')`;
+      incoming.classList.add('active');
+      outgoing.classList.remove('active');
+    };
+    img.onerror = () => {
+      incoming.style.backgroundImage = `url('${newUrl}')`;
+      incoming.classList.add('active');
+      outgoing.classList.remove('active');
+    };
+  }
+
+  initWallpaperSettings() {
+    const opacitySlider = document.getElementById('settingWallpaperOpacity');
+    const blurSlider = document.getElementById('settingWallpaperBlur');
+    const opacityVal = document.getElementById('wallpaperOpacityVal');
+    const blurVal = document.getElementById('wallpaperBlurVal');
+    const btnCustom = document.getElementById('btnChooseCustomWallpaper');
+    const btnReset = document.getElementById('btnResetWallpaper');
+
+    const savedOpacity = this.store.wallpaperOpacity !== undefined ? this.store.wallpaperOpacity : 68;
+    const savedBlur = this.store.wallpaperBlur !== undefined ? this.store.wallpaperBlur : 0;
+
+    document.documentElement.style.setProperty('--wallpaper-opacity', (savedOpacity / 100).toFixed(2));
+    document.documentElement.style.setProperty('--wallpaper-blur', `${savedBlur}px`);
+
+    if (opacitySlider) {
+      opacitySlider.value = savedOpacity;
+      if (opacityVal) opacityVal.textContent = `${savedOpacity}%`;
+      opacitySlider.oninput = async (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (opacityVal) opacityVal.textContent = `${val}%`;
+        document.documentElement.style.setProperty('--wallpaper-opacity', (val / 100).toFixed(2));
+        this.store.wallpaperOpacity = val;
+        await window.api.saveStore(this.store);
+      };
+    }
+
+    if (blurSlider) {
+      blurSlider.value = savedBlur;
+      if (blurVal) blurVal.textContent = `${savedBlur}px`;
+      blurSlider.oninput = async (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (blurVal) blurVal.textContent = `${val}px`;
+        document.documentElement.style.setProperty('--wallpaper-blur', `${val}px`);
+        this.store.wallpaperBlur = val;
+        await window.api.saveStore(this.store);
+      };
+    }
+
+    if (btnCustom) {
+      btnCustom.onclick = async () => {
+        const customPath = await window.api.selectWallpaper();
+        if (customPath) {
+          this.store.customWallpaper = customPath;
+          await window.api.saveStore(this.store);
+          this.updateWallpaper(this.store.theme || 'oled');
+          this.ui.showToast('Applied custom wallpaper background!');
+        }
+      };
+    }
+
+    if (btnReset) {
+      btnReset.onclick = async () => {
+        if (this.store.customWallpaper) {
+          delete this.store.customWallpaper;
+          await window.api.saveStore(this.store);
+          this.updateWallpaper(this.store.theme || 'oled');
+          this.ui.showToast('Reset to theme wallpaper!');
+        } else {
+          this.ui.showToast('Already using theme wallpaper.');
+        }
+      };
+    }
   }
 
   bindBatchRenameModal() {

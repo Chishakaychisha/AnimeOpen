@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3840 2160" width="100%" height="100%">
+  <defs>
+    <!-- Deep Cosmic Nebula Gradients -->
+    <radialGradient id="nebulaViolet" cx="65%" cy="35%" r="45%">
+      <stop offset="0%" stop-color="rgba(112, 0, 255, 0.28)" />
+      <stop offset="45%" stop-color="rgba(80, 0, 180, 0.12)" />
+      <stop offset="85%" stop-color="rgba(30, 0, 80, 0.03)" />
+      <stop offset="100%" stop-color="transparent" />
+    </radialGradient>
+
+    <radialGradient id="nebulaPink" cx="30%" cy="45%" r="40%">
+      <stop offset="0%" stop-color="rgba(255, 51, 102, 0.22)" />
+      <stop offset="50%" stop-color="rgba(180, 20, 80, 0.08)" />
+      <stop offset="100%" stop-color="transparent" />
+    </radialGradient>
+
+    <radialGradient id="nebulaCyan" cx="75%" cy="65%" r="35%">
+      <stop offset="0%" stop-color="rgba(0, 229, 255, 0.18)" />
+      <stop offset="60%" stop-color="rgba(0, 100, 180, 0.05)" />
+      <stop offset="100%" stop-color="transparent" />
+    </radialGradient>
+
+    <!-- Celestial Moon Glow -->
+    <radialGradient id="crescentGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(255, 255, 255, 0.35)" />
+      <stop offset="50%" stop-color="rgba(180, 200, 255, 0.12)" />
+      <stop offset="100%" stop-color="transparent" />
+    </radialGradient>
+
+    <!-- Star Glow Filter -->
+    <filter id="starGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Pitch Black OLED Base -->
+  <rect width="3840" height="2160" fill="#000000" />
+
+  <!-- Ambient Nebulae -->
+  <rect width="3840" height="2160" fill="url(#nebulaViolet)" />
+  <rect width="3840" height="2160" fill="url(#nebulaPink)" />
+  <rect width="3840" height="2160" fill="url(#nebulaCyan)" />
+
+  <!-- Milky Way Star Dust Stream -->
+  <path d="M-200,1800 Q1200,1100 2400,600 T3900,-100" stroke="rgba(255, 255, 255, 0.05)" stroke-width="600" fill="none" filter="url(#starGlow)" />
+
+  <!-- High-Contrast Brilliant Stars -->
+  <g fill="#ffffff">
+    <!-- Bright Key Stars with Glow -->
+    <circle cx="820" cy="380" r="3.5" filter="url(#starGlow)" />
+    <circle cx="1450" cy="240" r="3" filter="url(#starGlow)" />
+    <circle cx="2180" cy="320" r="4" filter="url(#starGlow)" />
+    <circle cx="2740" cy="180" r="3" filter="url(#starGlow)" />
+    <circle cx="3350" cy="420" r="3.5" filter="url(#starGlow)" />
+    <circle cx="560" cy="720" r="3" filter="url(#starGlow)" />
+    <circle cx="1890" cy="650" r="2.5" filter="url(#starGlow)" />
+    <circle cx="3050" cy="780" r="3" filter="url(#starGlow)" />
+
+    <!-- Secondary Star Field -->
+    <g opacity="0.8">
+      <circle cx="310" cy="220" r="1.5" />
+      <circle cx="680" cy="180" r="2" />
+      <circle cx="1040" cy="290" r="1.8" />
+      <circle cx="1280" cy="140" r="2.2" />
+      <circle cx="1620" cy="380" r="1.5" />
+      <circle cx="1960" cy="200" r="2" />
+      <circle cx="2390" cy="150" r="1.8" />
+      <circle cx="2950" cy="290" r="2" />
+      <circle cx="3590" cy="250" r="1.6" />
+      <circle cx="200" cy="540" r="1.8" />
+      <circle cx="450" cy="880" r="1.4" />
+      <circle cx="1150" cy="620" r="2" />
+      <circle cx="1720" cy="820" r="1.6" />
+      <circle cx="2480" cy="710" r="2" />
+      <circle cx="2820" cy="640" r="1.5" />
+      <circle cx="3400" cy="850" r="1.8" />
+      <circle cx="3720" cy="580" r="2" />
+    </g>
+
+    <!-- Faint Distant Star Density -->
+    <g opacity="0.45">
+      <circle cx="150" cy="110" r="1" />
+      <circle cx="420" cy="330" r="1" />
+      <circle cx="750" cy="510" r="1.2" />
+      <circle cx="920" cy="740" r="1" />
+      <circle cx="1380" cy="490" r="1" />
+      <circle cx="1520" cy="760" r="1.2" />
+      <circle cx="2080" cy="480" r="1" />
+      <circle cx="2280" cy="820" r="1" />
+      <circle cx="2600" cy="420" r="1.2" />
+      <circle cx="3180" cy="520" r="1" />
+      <circle cx="3480" cy="680" r="1" />
+      <circle cx="3650" cy="390" r="1.2" />
+    </g>
+  </g>
+
+  <!-- Shooting Star Streaks -->
+  <line x1="2850" y1="200" x2="2520" y2="380" stroke="url(#crescentGlow)" stroke-width="2.5" stroke-linecap="round" />
+  <circle cx="2520" cy="380" r="2" fill="#ffffff" filter="url(#starGlow)" />
+
+  <line x1="1400" y1="120" x2="1180" y2="240" stroke="url(#crescentGlow)" stroke-width="1.8" stroke-linecap="round" />
+
+  <!-- Luminous Crescent Moon (Top Right) -->
+  <circle cx="3050" cy="460" r="280" fill="url(#crescentGlow)" />
+  <g>
+    <!-- Outer White Moon Disc -->
+    <circle cx="3050" cy="460" r="120" fill="#f8faff" filter="url(#starGlow)" />
+    <!-- Dark Shadow Cutter for Crescent Curve -->
+    <circle cx="3090" cy="435" r="115" fill="#000000" />
+  </g>
+
+  <!-- Distant Dark Mountain Ranges -->
+  <path d="M0,1720 Q700,1520 1400,1660 T2800,1580 T3840,1640 L3840,2160 L0,2160 Z" fill="#050508" />
+
+  <!-- Stargazer Cliff (Foreground Left) -->
+  <path d="M0,1620 Q500,1580 900,1760 T1600,1920 L1600,2160 L0,2160 Z" fill="#000000" />
+
+  <!-- Lone Anime Stargazer Silhouette on Cliff Edge -->
+  <g fill="#000000">
+    <!-- Rock Outcrop -->
+    <path d="M680,1630 Q740,1610 820,1625 Q860,1650 840,1680 L700,1680 Z" />
+    <!-- Character sitting, legs dangling -->
+    <circle cx="760" cy="1565" r="12" /> <!-- Head -->
+    <path d="M750,1577 L770,1577 L775,1615 L745,1615 Z" /> <!-- Torso / Jacket -->
+    <path d="M748,1615 L745,1645 L735,1645" stroke="#000000" stroke-width="6" stroke-linecap="round" /> <!-- Leg 1 -->
+    <path d="M765,1615 L768,1648 L778,1648" stroke="#000000" stroke-width="6" stroke-linecap="round" /> <!-- Leg 2 -->
+    <!-- Anime Scarf blowing in the wind -->
+    <path d="M745,1578 Q710,1570 660,1585 Q710,1576 745,1582" stroke="#ff3366" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+  </g>
+</svg>

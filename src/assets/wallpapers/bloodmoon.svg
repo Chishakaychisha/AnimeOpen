@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3840 2160" width="100%" height="100%">
+  <defs>
+    <radialGradient id="spaceGlow" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#2a050d" />
+      <stop offset="45%" stop-color="#140306" />
+      <stop offset="100%" stop-color="#050102" />
+    </radialGradient>
+    
+    <radialGradient id="moonGlowOuter" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(255, 30, 60, 0.45)" />
+      <stop offset="40%" stop-color="rgba(255, 20, 50, 0.2)" />
+      <stop offset="80%" stop-color="rgba(200, 0, 30, 0.05)" />
+      <stop offset="100%" stop-color="transparent" />
+    </radialGradient>
+
+    <radialGradient id="moonCore" cx="42%" cy="38%" r="60%">
+      <stop offset="0%" stop-color="#ff7b8b" />
+      <stop offset="35%" stop-color="#ff2e4d" />
+      <stop offset="70%" stop-color="#c40b2a" />
+      <stop offset="100%" stop-color="#54000e" />
+    </radialGradient>
+
+    <linearGradient id="cloudGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="transparent" />
+      <stop offset="30%" stop-color="rgba(200, 20, 50, 0.25)" />
+      <stop offset="70%" stop-color="rgba(120, 10, 30, 0.35)" />
+      <stop offset="100%" stop-color="transparent" />
+    </linearGradient>
+
+    <linearGradient id="mountainFar" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2c0a13" />
+      <stop offset="100%" stop-color="#100306" />
+    </linearGradient>
+
+    <linearGradient id="mountainMid" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a040a" />
+      <stop offset="100%" stop-color="#090104" />
+    </linearGradient>
+
+    <linearGradient id="mountainNear" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#120206" />
+      <stop offset="100%" stop-color="#020001" />
+    </linearGradient>
+    
+    <filter id="crimsonBlur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="60" />
+    </filter>
+  </defs>
+
+  <!-- Sky Base -->
+  <rect width="3840" height="2160" fill="url(#spaceGlow)" />
+
+  <!-- Stars -->
+  <g fill="#ffccd4" opacity="0.6">
+    <circle cx="340" cy="180" r="2.5" />
+    <circle cx="580" cy="420" r="1.5" />
+    <circle cx="820" cy="190" r="3" />
+    <circle cx="1120" cy="310" r="2" />
+    <circle cx="1450" cy="150" r="2.5" />
+    <circle cx="1780" cy="280" r="1.5" />
+    <circle cx="2150" cy="160" r="2" />
+    <circle cx="2490" cy="380" r="3" />
+    <circle cx="2830" cy="210" r="1.5" />
+    <circle cx="3120" cy="360" r="2.5" />
+    <circle cx="3480" cy="170" r="2" />
+    <circle cx="220" cy="620" r="2" />
+    <circle cx="710" cy="740" r="1.5" />
+    <circle cx="3200" cy="680" r="2" />
+    <circle cx="3610" cy="520" r="3" />
+  </g>
+
+  <!-- Moon Giant Glow Outer -->
+  <circle cx="2600" cy="720" r="850" fill="url(#moonGlowOuter)" />
+  <circle cx="2600" cy="720" r="560" fill="url(#moonGlowOuter)" />
+
+  <!-- Moon Body -->
+  <circle cx="2600" cy="720" r="390" fill="url(#moonCore)" />
+
+  <!-- Moon Craters & Texture -->
+  <g fill="#380008" opacity="0.35">
+    <circle cx="2510" cy="610" r="75" />
+    <circle cx="2420" cy="740" r="95" />
+    <circle cx="2540" cy="840" r="65" />
+    <circle cx="2690" cy="650" r="110" />
+    <circle cx="2730" cy="810" r="80" />
+    <ellipse cx="2630" cy="910" rx="90" ry="50" />
+    <circle cx="2820" cy="710" r="45" />
+  </g>
+
+  <!-- Drifting Red Fog / Clouds across Moon -->
+  <path d="M1900,640 Q2350,560 2700,690 T3500,610 L3500,820 Q2900,900 2400,780 T1900,860 Z" fill="url(#cloudGrad1)" filter="url(#crimsonBlur)" />
+  <path d="M1800,800 Q2250,720 2800,840 T3600,760 L3600,960 Q3000,1020 2500,910 T1800,980 Z" fill="url(#cloudGrad1)" filter="url(#crimsonBlur)" />
+
+  <!-- Far Mountain Ridges -->
+  <path d="M0,1350 Q500,1180 1050,1320 T2100,1260 T3100,1300 T3840,1220 L3840,2160 L0,2160 Z" fill="url(#mountainFar)" />
+
+  <!-- Mid Mountain Ridges & Pagoda -->
+  <path d="M0,1540 Q650,1380 1300,1520 T2600,1440 T3840,1500 L3840,2160 L0,2160 Z" fill="url(#mountainMid)" />
+
+  <!-- Japanese Pagoda Silhouette on Ridge (Left-Center) -->
+  <g fill="#070103">
+    <!-- Spire -->
+    <rect x="946" y="1120" width="8" height="110" />
+    <polygon points="950,1100 944,1130 956,1130" />
+    <!-- Tier 5 -->
+    <path d="M890,1230 Q950,1215 1010,1230 L995,1248 L905,1248 Z" />
+    <rect x="925" y="1245" width="50" height="25" />
+    <!-- Tier 4 -->
+    <path d="M870,1270 Q950,1250 1030,1270 L1012,1292 L888,1292 Z" />
+    <rect x="915" y="1290" width="70" height="30" />
+    <!-- Tier 3 -->
+    <path d="M845,1320 Q950,1295 1055,1320 L1035,1345 L865,1345 Z" />
+    <rect x="905" y="1340" width="90" height="35" />
+    <!-- Tier 2 -->
+    <path d="M815,1375 Q950,1345 1085,1375 L1060,1405 L840,1405 Z" />
+    <rect x="890" y="1400" width="120" height="40" />
+    <!-- Tier 1 Base -->
+    <path d="M780,1440 Q950,1405 1120,1440 L1090,1475 L810,1475 Z" />
+    <rect x="870" y="1470" width="160" height="70" />
+    <rect x="840" y="1540" width="220" height="40" />
+    
+    <!-- Torii Gate on Hill -->
+    <rect x="1450" y="1440" width="16" height="110" />
+    <rect x="1560" y="1440" width="16" height="110" />
+    <path d="M1410,1435 Q1510,1425 1610,1435 L1610,1448 Q1510,1438 1410,1448 Z" />
+    <rect x="1430" y="1460" width="166" height="12" />
+    <rect x="1508" y="1448" width="10" height="20" />
+  </g>
+
+  <!-- Foreground Mountains, Cliffs & Pine Trees -->
+  <path d="M0,1720 Q480,1580 1100,1740 T2300,1660 T3840,1700 L3840,2160 L0,2160 Z" fill="url(#mountainNear)" />
+
+  <!-- Pine Tree Silhouettes -->
+  <g fill="#020001">
+    <!-- Group Left -->
+    <polygon points="450,1510 420,1560 480,1560" />
+    <polygon points="450,1540 405,1605 495,1605" />
+    <polygon points="450,1580 390,1660 510,1660" />
+    <rect x="444" y="1660" width="12" height="60" />
+
+    <polygon points="560,1550 535,1595 585,1595" />
+    <polygon points="560,1580 520,1635 600,1635" />
+    <polygon points="560,1615 505,1685 615,1685" />
+    <rect x="555" y="1685" width="10" height="50" />
+
+    <!-- Group Right Foreground -->
+    <polygon points="3380,1490 3340,1550 3420,1550" />
+    <polygon points="3380,1530 3320,1605 3440,1605" />
+    <polygon points="3380,1580 3300,1680 3460,1680" />
+    <rect x="3373" y="1680" width="14" height="70" />
+
+    <polygon points="3520,1530 3490,1580 3550,1580" />
+    <polygon points="3520,1565 3475,1625 3565,1625" />
+    <polygon points="3520,1610 3460,1695 3580,1695" />
+    <rect x="3514" y="1695" width="12" height="60" />
+  </g>
+
+  <!-- Drifting Glowing Ember Petals -->
+  <g fill="#ff4d6d" opacity="0.8">
+    <circle cx="1200" cy="1150" r="4" />
+    <circle cx="1650" cy="1320" r="5" />
+    <circle cx="2100" cy="1080" r="4.5" />
+    <circle cx="2450" cy="1250" r="6" />
+    <circle cx="2750" cy="1120" r="3.5" />
+    <circle cx="3100" cy="1350" r="5.5" />
+    <circle cx="1850" cy="1480" r="4" />
+    <circle cx="2280" cy="1540" r="5" />
+  </g>
+</svg>

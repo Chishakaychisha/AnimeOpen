@@ -27,6 +27,9 @@
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
+  --wallpaper-opacity: 0.68;
+  --wallpaper-blur: 0px;
+
   --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
@@ -162,6 +165,66 @@ body {
 
 body.in-player {
   overflow: hidden;
+}
+
+/* ==========================================================================
+   Dynamic Ambient Theme Wallpaper System with Cinematic Cross-Fade
+   ========================================================================== */
+.theme-wallpaper-container {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background-color: var(--bg-base);
+  transition: background-color 0.85s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-wallpaper-layer {
+  position: absolute;
+  inset: -24px;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transform: scale(1.04);
+  filter: blur(var(--wallpaper-blur, 0px));
+  transition: opacity 0.85s cubic-bezier(0.25, 1, 0.5, 1),
+              transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: opacity, transform;
+}
+
+.theme-wallpaper-layer.active {
+  opacity: var(--wallpaper-opacity, 0.68);
+  transform: scale(1);
+}
+
+.theme-wallpaper-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 25%, rgba(8, 10, 15, 0.35) 0%, rgba(8, 10, 15, 0.72) 65%, rgba(8, 10, 15, 0.94) 100%),
+              linear-gradient(to bottom, rgba(8, 10, 15, 0.45) 0%, rgba(8, 10, 15, 0.88) 100%);
+  pointer-events: none;
+  transition: background 0.85s ease;
+}
+
+body.in-player .theme-wallpaper-container {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+/* Ensure views and app elements sit smoothly above the wallpaper background */
+.view-container,
+.main-content,
+.modal-overlay,
+.detail-modal,
+.browser-drawer,
+.theme-audio-dock,
+.download-drawer-panel {
+  position: relative;
+  z-index: 1;
 }
 
 /* Custom Scrollbar */
@@ -1702,6 +1765,54 @@ body.in-player {
   height: 12px;
   border-radius: 50%;
   display: inline-block;
+}
+
+/* Wallpaper Settings Controls */
+.wallpaper-settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-top: 10px;
+}
+
+.wallpaper-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.wallpaper-setting-row .setting-sublabel {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  min-width: 170px;
+}
+
+.wallpaper-setting-row .setting-sublabel strong {
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+
+.wallpaper-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.styled-range {
+  flex: 1;
+  max-width: 240px;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  outline: none;
 }
 
 /* =========================================

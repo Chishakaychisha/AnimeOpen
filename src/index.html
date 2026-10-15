@@ -11,6 +11,13 @@
   <link rel="stylesheet" href="css/player.css">
 </head>
 <body class="dark-theme">
+  <!-- Dynamic Ambient Theme Wallpaper with Cinematic Cross-Fade -->
+  <div class="theme-wallpaper-container" id="themeWallpaperContainer" aria-hidden="true">
+    <div class="theme-wallpaper-layer active" id="wallpaperLayerA"></div>
+    <div class="theme-wallpaper-layer" id="wallpaperLayerB"></div>
+    <div class="theme-wallpaper-overlay"></div>
+  </div>
+
   <!-- Custom Draggable App Titlebar -->
   <header class="app-titlebar">
     <div class="titlebar-drag-region">
@@ -574,6 +581,29 @@
             <button class="theme-chip" data-theme="sunset">
               <span class="theme-dot" style="background:#ff7b00"></span> Vaporwave Sunset
             </button>
+          </div>
+        </div>
+
+        <!-- Theme Wallpaper & Atmosphere Controls -->
+        <div class="setting-item">
+          <label>Theme Wallpaper & Atmosphere</label>
+          <div class="wallpaper-settings-grid">
+            <div class="wallpaper-setting-row">
+              <span class="setting-sublabel">Wallpaper Opacity: <strong id="wallpaperOpacityVal">65%</strong></span>
+              <input type="range" id="settingWallpaperOpacity" min="15" max="100" value="65" class="styled-range" />
+            </div>
+            <div class="wallpaper-setting-row">
+              <span class="setting-sublabel">Ambient Blur: <strong id="wallpaperBlurVal">0px</strong></span>
+              <input type="range" id="settingWallpaperBlur" min="0" max="12" value="0" class="styled-range" />
+            </div>
+            <div class="wallpaper-actions-row">
+              <button class="btn-secondary" id="btnChooseCustomWallpaper" title="Pick an image file from your computer">
+                🖼️ Choose Custom Wallpaper...
+              </button>
+              <button class="btn-secondary" id="btnResetWallpaper" title="Reset to default theme wallpaper" style="font-size:0.8rem;padding:6px 12px;">
+                ↺ Reset to Theme
+              </button>
+            </div>
           </div>
         </div>
 

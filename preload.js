@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('api', {
   saveScreenshot: (params) => ipcRenderer.invoke('screenshot:save', params),
   batchRename: (renames) => ipcRenderer.invoke('file:batch-rename', renames),
   selectSubtitle: () => ipcRenderer.invoke('dialog:select-subtitle'),
+  selectWallpaper: () => ipcRenderer.invoke('dialog:select-wallpaper'),
   findSubtitles: (filePath) => ipcRenderer.invoke('file:find-subtitles', filePath),
   minimizeWindow: () => ipcRenderer.invoke('window:minimize'),
   maximizeWindow: () => ipcRenderer.invoke('window:maximize'),

@@ -1026,6 +1026,20 @@ ipcMain.handle('dialog:select-subtitle', async () => {
   return { filePath, content, fileName: path.basename(filePath) };
 });
 
+ipcMain.handle('dialog:select-wallpaper', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    title: 'Select Custom Wallpaper Image',
+    filters: [
+      { name: 'Images & Wallpapers', extensions: ['jpg', 'jpeg', 'png', 'webp', 'svg', 'bmp'] }
+    ]
+  });
+  if (result.canceled || !result.filePaths || result.filePaths.length === 0) {
+    return null;
+  }
+  return result.filePaths[0];
+});
+
 ipcMain.handle('file:find-subtitles', async (event, videoFilePath) => {
   try {
     const dir = path.dirname(videoFilePath);
