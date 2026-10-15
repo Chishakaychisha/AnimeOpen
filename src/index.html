@@ -116,6 +116,56 @@
         </div>
       </div>
 
+      <!-- Netflix-Style Hero Featured / Recently Added Banner -->
+      <div class="hero-banner hidden" id="heroBanner">
+        <div class="hero-backdrop-img" id="heroBackdrop"></div>
+        <div class="hero-vignette-overlay"></div>
+        
+        <div class="hero-content">
+          <h1 class="hero-series-title" id="heroTitle">ANIME TITLE</h1>
+          <div class="hero-meta-row" id="heroMeta">
+            <span class="hero-badge-type">Anime</span>
+            <span>•</span>
+            <span id="heroYear">2026</span>
+            <span>•</span>
+            <span id="heroEpCount">12 Episodes</span>
+            <span>•</span>
+            <span class="hero-score-badge" id="heroScore">★ 8.5</span>
+          </div>
+          <p class="hero-description" id="heroDesc">
+            Anime description synopsis loading...
+          </p>
+          
+          <div class="hero-actions">
+            <button class="btn-hero-play" id="btnHeroPlay" title="Play / Resume Episode">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              <span>Play</span>
+            </button>
+            <button class="btn-hero-info" id="btnHeroInfo" title="View Series Details & Episodes">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+              <span>More Info</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Bottom-Right Tag Badge (e.g. Recently Added) -->
+        <div class="hero-tag-badge">
+          <span class="hero-tag-icon">🔖</span>
+          <span id="heroTagLabel">Recently Added</span>
+        </div>
+      </div>
+
+      <!-- Netflix-Style Continue Watching Shelf -->
+      <section class="shelf-section hidden" id="continueWatchingSection">
+        <div class="shelf-header">
+          <h2 class="shelf-title">Continue Watching</h2>
+          <span class="shelf-sub">Jump right back into your episodes</span>
+        </div>
+        <div class="continue-grid" id="continueGrid">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
       <!-- Status & Genre Filter Bar -->
       <div class="filter-controls-bar">
         <div class="status-bar" id="statusFilterContainer">
@@ -130,17 +180,6 @@
       <div class="genre-bar" id="genreFilterContainer">
         <button class="filter-pill active" data-genre="ALL">All Genres</button>
       </div>
-
-      <!-- Continue Watching Shelf -->
-      <section class="shelf-section hidden" id="continueWatchingSection">
-        <div class="shelf-header">
-          <h2 class="shelf-title">Continue Watching</h2>
-          <span class="shelf-sub">Jump right back into your episodes</span>
-        </div>
-        <div class="continue-grid" id="continueGrid">
-          <!-- Populated dynamically -->
-        </div>
-      </section>
 
       <!-- All Anime Library Grid -->
       <section class="shelf-section">

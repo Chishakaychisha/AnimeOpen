@@ -31,22 +31,27 @@ class AnimeUI {
     const emptyState = document.getElementById('emptyState');
     const continueSection = document.getElementById('continueWatchingSection');
     const continueGrid = document.getElementById('continueGrid');
+    const heroBanner = document.getElementById('heroBanner');
 
     if (!animeList || animeList.length === 0) {
       grid.innerHTML = '';
       emptyState.classList.remove('hidden');
       if (continueSection) continueSection.classList.add('hidden');
+      if (heroBanner) heroBanner.classList.add('hidden');
       return;
     }
 
     emptyState.classList.add('hidden');
+
+    // Render Netflix-style Hero Featured / Recently Added Banner
+    this.renderHeroBanner(animeList, continueWatchingList);
 
     // Render Continue Watching shelf if any
     if (continueWatchingList.length > 0 && continueSection && continueGrid) {
       continueSection.classList.remove('hidden');
       continueGrid.innerHTML = '';
 
-      continueWatchingList.slice(0, 6).forEach(item => {
+      continueWatchingList.slice(0, 10).forEach(item => {
         const card = this.createContinueCard(item);
         continueGrid.appendChild(card);
       });
@@ -60,6 +65,130 @@ class AnimeUI {
       const card = this.createAnimeCard(anime);
       grid.appendChild(card);
     });
+  }
+
+  renderHeroBanner(animeList, continueWatchingList = []) {
+    const heroBanner = document.getElementById('heroBanner');
+    if (!heroBanner) return;
+
+    if (!animeList || animeList.length === 0) {
+      heroBanner.classList.add('hidden');
+      return;
+    }
+
+    // Pick featured anime:
+    // First anime in the current view that has banner or cover image metadata,
+    // or fallback to the very first item
+    const featuredAnime = animeList.find(a => {
+      const m = a.metadata;
+      return m && (m.banner || m.localBanner || m.cover || m.localCover);
+    }) || animeList[0];
+
+    if (!featuredAnime) {
+      heroBanner.classList.add('hidden');
+      return;
+    }
+
+    heroBanner.classList.remove('hidden');
+
+    const meta = featuredAnime.metadata || {};
+    const backdropEl = document.getElementById('heroBackdrop');
+    const titleEl = document.getElementById('heroTitle');
+    const yearEl = document.getElementById('heroYear');
+    const epCountEl = document.getElementById('heroEpCount');
+    const scoreEl = document.getElementById('heroScore');
+    const descEl = document.getElementById('heroDesc');
+    const tagLabelEl = document.getElementById('heroTagLabel');
+    const btnPlay = document.getElementById('btnHeroPlay');
+    const btnInfo = document.getElementById('btnHeroInfo');
+
+    // Series title
+    const title = meta.title || featuredAnime.title || 'Unknown Anime';
+    if (titleEl) titleEl.textContent = title;
+
+    // Meta row (Year, Episode Count, Score)
+    if (yearEl) {
+      const year = meta.year || (featuredAnime.episodes && featuredAnime.episodes[0] ? new Date(featuredAnime.episodes[0].mtime || Date.now()).getFullYear() : '2026');
+      yearEl.textContent = year;
+    }
+    if (epCountEl) {
+      const count = featuredAnime.totalEpisodes || (featuredAnime.episodes ? featuredAnime.episodes.length : 1);
+      epCountEl.textContent = `${count} ${count === 1 ? 'Episode' : 'Episodes'}`;
+    }
+    if (scoreEl) {
+      if (meta.score) {
+        scoreEl.textContent = `★ ${meta.score}`;
+        scoreEl.style.display = 'inline';
+      } else {
+        scoreEl.style.display = 'none';
+      }
+    }
+
+    // Description (clean any HTML tags)
+    if (descEl) {
+      const rawDesc = meta.description || 'Watch now in high quality with auto-episode tracking, subtitle sync controls, and local LAN sharing.';
+      descEl.textContent = rawDesc.replace(/<[^>]*>/g, '').trim();
+    }
+
+    // Banner / Backdrop Artwork
+    let bannerUrl = '';
+    if (meta.localBanner) {
+      bannerUrl = window.api.getLocalImageUrl(meta.localBanner);
+    } else if (meta.banner) {
+      bannerUrl = meta.banner;
+    } else if (meta.localCover) {
+      bannerUrl = window.api.getLocalImageUrl(meta.localCover);
+    } else if (meta.cover) {
+      bannerUrl = meta.cover;
+    }
+
+    if (backdropEl) {
+      if (bannerUrl) {
+        backdropEl.style.backgroundImage = `url('${bannerUrl}')`;
+        backdropEl.style.backgroundColor = 'transparent';
+      } else {
+        const fallback = AnimeMetadata.getFallbackPoster(title);
+        backdropEl.style.backgroundImage = 'none';
+        backdropEl.style.background = fallback.gradient;
+      }
+    }
+
+    // Badge label
+    if (tagLabelEl) {
+      tagLabelEl.textContent = 'Recently Added';
+    }
+
+    // Target Episode for Play Button (either resume in-progress, or first episode)
+    let targetEpisode = null;
+    const continueItem = continueWatchingList.find(c => c.anime.id === featuredAnime.id);
+    if (continueItem && continueItem.episode) {
+      targetEpisode = continueItem.episode;
+    } else if (featuredAnime.episodes && featuredAnime.episodes.length > 0) {
+      targetEpisode = featuredAnime.episodes[0];
+    }
+
+    // Clone & re-bind play / info buttons
+    if (btnPlay) {
+      const newBtnPlay = btnPlay.cloneNode(true);
+      btnPlay.parentNode.replaceChild(newBtnPlay, btnPlay);
+      newBtnPlay.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (targetEpisode) {
+          this.app.player.loadEpisode(featuredAnime, targetEpisode);
+        } else {
+          this.app.showAnimeDetail(featuredAnime);
+        }
+      });
+    }
+
+    if (btnInfo) {
+      const newBtnInfo = btnInfo.cloneNode(true);
+      btnInfo.parentNode.replaceChild(newBtnInfo, btnInfo);
+      newBtnInfo.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.app.showAnimeDetail(featuredAnime);
+      });
+    }
   }
 
   createAnimeCard(anime) {
