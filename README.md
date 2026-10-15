@@ -3,11 +3,32 @@
 > **The Ultimate Local Anime Streaming & Library Experience for Desktop**  
 > Built with Electron, HTML5, Vanilla CSS, and modern JavaScript.
 
-AnimeOpen brings a premium Netflix / Crunchyroll-grade streaming experience directly to your local anime collection. Point it to any folder or hard drive, and it instantly transforms messy video files and `.zip` archives into a gorgeous, high-definition anime universe complete with AniList metadata, voice actor showcases, automated opening skips, and theme song playlists.
+AnimeOpen brings a premium Netflix / Crunchyroll-grade streaming experience directly to your local anime collection. Point it to any folder or hard drive, and it instantly transforms messy video files and `.zip` archives into a gorgeous, high-definition anime universe complete with AniList metadata, voice actor showcases, automated opening skips, offline LAN peer sharing, and theme song playlists.
 
 ---
 
 ## ✨ Features Overview
+
+### 🍿 Netflix-Style Hero Banner & Continue Watching Shelf
+- **Recently Added / Featured Hero Banner**: A cinematic backdrop banner at the top of your library displaying high-resolution artwork, bold title typography, release year, episode count, community ratings, AniList synopses, and a bottom-right "Recently Added" badge.
+- **1-Click Hero Resume**: Prominent white pill `▶ Play` button to jump straight into your in-progress episode or launch Episode 1 instantly, plus a glass pill `ℹ More Info` button.
+- **Dedicated Continue Watching Carousel**: A Netflix-style horizontal scroll shelf (`overflow-x: auto`) positioned directly beneath the hero banner with real-time percentage progress bars, episode badges, and 1-click resume cards.
+
+---
+
+### 📡 Offline Local LAN Peer Sharing (No Internet Needed)
+- **Local Network Sharing**: Stream and share anime with friends on the same Wi-Fi or Ethernet network completely offline without internet data usage.
+- **Auto Peer Discovery (UDP Multicast)**: Automatically discovers nearby AnimeOpen instances on your local subnet using zero-configuration UDP beacons (`239.255.255.250`).
+- **Direct LAN HTTP Streaming**: High-speed, random-access HTTP range streaming directly from your friend's laptop or desktop storage.
+- **Peer Library Drawer**: View available LAN peers, explore their shared anime libraries, and start watching with a single click.
+
+---
+
+### ⚡ Live Automation & RSS Downloader
+- **Real-Time Folder Watcher**: Automatically detects newly added, moved, or deleted video files on your disk in real time with instant library indexing—no need to manually click "Rescan Library".
+- **Automated RSS Episode Downloader**: Subscribe to your favorite currently airing anime via RSS feeds (SubsPlease, Nyaa.si). AnimeOpen checks for new episode releases in the background and auto-downloads them directly into the appropriate series folder as soon as they air.
+
+---
 
 ### 🎨 6 Handcrafted Aesthetic Themes
 Switch themes instantly from **Settings** (⚙️) with real-time preview and persistence:
@@ -23,6 +44,9 @@ Switch themes instantly from **Settings** (⚙️) with real-time preview and pe
 ### 🎬 Cinematic Streaming Player
 - **HTTP 206 Partial Content Streaming (`anime-media://`)**: True random-access streaming allowing instantaneous seeking and skipping across multi-gigabyte video files.
 - **Dual-Audio & Subtitle Track Selectors**: Dynamic menus for switching Japanese/English language audio tracks and subtitle streams.
+- **Subtitle Sync & Timing Offset**: Fine-tune external subtitle timing (`-0.5s` / `+0.5s` increments) directly within the player controls for out-of-sync subtitle files.
+- **Subtitle Styling Controls**: Custom font sizes, font families, text colors, and background/outline opacity for `.srt` and `.vtt` subtitles.
+- **Online Subtitle Downloader**: In-player subtitle search and one-click download for missing subtitle files.
 - **AniSkip Integration (Skip OP & ED)**: Automatically detects opening and ending timestamps via the AniSkip API. Features an interactive **"Skip Opening"** button and an optional **"Auto-Skip"** toggle in Settings.
 - **1-Click External Player Fallback (VLC / MPV)**: One-click button in player controls to instantly launch heavy 10-bit HEVC/x265 videos in VLC or MPV at your exact current timestamp.
 - **Instant Screenshot Grabber (<kbd>S</kbd> Key)**: Captures clean, unscaled video frames with zero UI overlays, copies directly to your clipboard for Discord/Twitter, and saves a PNG to `Pictures\AnimeOpen_Screenshots\`.
@@ -45,6 +69,7 @@ Switch themes instantly from **Settings** (⚙️) with real-time preview and pe
   - Shows real-time airing countdowns for ongoing anime (`📡 Airing: Ep 8 in 3 days`).
 - **🌐 "Add to My Library" In-App Anime Browser & Torrent Downloader**:
   - **Embedded In-App Browser**: Custom address bar, instant site chips (**Nyaa.si**, **SubsPlease**, **AnimePahe**, **HiAnime**, **Erai-raws**, and **Archive.org**), and custom URL navigation.
+  - **Custom Bookmarks & Sites**: Add your favorite custom streaming or release websites with custom titles and URLs, complete with bookmark management and 1-click access.
   - **Built-in WebTorrent Engine**: Directly downloads anime from `.torrent` files and `magnet:` links without requiring external third-party software.
   - **Automatic Series Subfolder Routing**: Automatically parses the clean anime title and saves episodes inside dedicated folders (e.g. `D:\Anime\Frieren Beyond Journey's End\`) so your collection stays organized.
   - **In-App Downloads Manager Drawer**: Track all active and finished downloads with speed indicators (`MB/s`), progress bars, peer counts, and quick "Open in Folder" actions.
@@ -69,6 +94,7 @@ Switch themes instantly from **Settings** (⚙️) with real-time preview and pe
 | <kbd>S</kbd> | Capture Screenshot (Saved to Pictures + Copied to Clipboard) |
 | <kbd>N</kbd> | Next Episode |
 | <kbd>P</kbd> | Previous Episode |
+| <kbd>[</kbd> / <kbd>]</kbd> | Adjust Subtitle Timing (-0.5s / +0.5s offset) |
 | <kbd>F</kbd> | Toggle Fullscreen |
 | <kbd>Esc</kbd> | Exit Fullscreen / Close Player |
 
