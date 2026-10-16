@@ -25,6 +25,7 @@ class AnimeApp {
     this.searchQuery = '';
     this.sortBy = 'recent';
     this.currentMode = 'anime';
+    this._activeScanToken = 0;
 
     this.ui = new AnimeUI(this);
     this.player = new AnimePlayer(this);
@@ -45,7 +46,6 @@ class AnimeApp {
     this.bindUserGuide();
     this.bindRssModal();
     this.bindLanSharing();
-    this.inAppBrowser.init();
 
     // Local Area Network (LAN) Peer Sharing listeners
     if (window.api?.onLanPeersChanged) {
@@ -87,7 +87,7 @@ class AnimeApp {
     this.applyTheme(this.store.theme || 'oled');
     this.bindThemeSelector();
     this.bindModeSwitcher();
-    this.inAppBrowser?.initBookmarks();
+    this.inAppBrowser.init();
 
     // Global Escape key handler to close any active modal or panel
     window.addEventListener('keydown', (e) => {
@@ -104,11 +104,12 @@ class AnimeApp {
     }
 
     if (this.currentMode === 'cinema') {
-      const activeFolder = this.store.cinemaFolder || this.store.libraryFolder;
+      const activeFolder = this.store.cinemaFolder;
       if (activeFolder) {
         document.getElementById('currentFolderPathDisplay').textContent = activeFolder;
         await this.scanCinemaLibrary();
       } else {
+        document.getElementById('currentFolderPathDisplay').textContent = 'No folder selected';
         this.ui.renderLibrary([]);
       }
     } else {
@@ -116,6 +117,7 @@ class AnimeApp {
         document.getElementById('currentFolderPathDisplay').textContent = this.store.libraryFolder;
         await this.scanLibrary();
       } else {
+        document.getElementById('currentFolderPathDisplay').textContent = 'No folder selected';
         this.ui.renderLibrary([]);
       }
     }
@@ -365,26 +367,50 @@ class AnimeApp {
   async promptSelectFolder() {
     const folder = await window.api.selectFolder();
     if (folder) {
-      this.store.libraryFolder = folder;
-      await window.api.saveStore(this.store);
-      document.getElementById('currentFolderPathDisplay').textContent = folder;
-      this.ui.showToast(`Anime library set to ${folder}`);
-      await this.scanLibrary();
+      if (this.currentMode === 'cinema') {
+        this.store.cinemaFolder = folder;
+        await window.api.saveStore(this.store);
+        const folderDisplay = document.getElementById('currentFolderPathDisplay');
+        if (folderDisplay) folderDisplay.textContent = folder;
+        const cinemaFolderEl = document.getElementById('settingsCinemaFolder');
+        if (cinemaFolderEl) cinemaFolderEl.textContent = folder;
+        this.ui.showToast(`Movies & TV Shows library set to ${folder}`);
+        await this.scanCinemaLibrary();
+      } else {
+        this.store.libraryFolder = folder;
+        await window.api.saveStore(this.store);
+        const folderDisplay = document.getElementById('currentFolderPathDisplay');
+        if (folderDisplay) folderDisplay.textContent = folder;
+        const animeFolderEl = document.getElementById('settingsCurrentFolder');
+        if (animeFolderEl) animeFolderEl.textContent = folder;
+        this.ui.showToast(`Anime library set to ${folder}`);
+        await this.scanLibrary();
+      }
     }
   }
 
   async scanLibrary(forceRefreshMetadata = false) {
-    if (!this.store.libraryFolder) return;
+    const scanToken = ++this._activeScanToken;
+    if (!this.store.libraryFolder || this.currentMode !== 'anime') {
+      const scanSpinner = document.getElementById('scanSpinner');
+      if (scanSpinner) scanSpinner.classList.add('hidden');
+      return;
+    }
 
     this.ui.showToast('Scanning anime directory...');
     const scanSpinner = document.getElementById('scanSpinner');
     const scanSpinnerText = scanSpinner ? scanSpinner.querySelector('span:last-child') : null;
     if (scanSpinner) {
-      if (scanSpinnerText) scanSpinnerText.textContent = 'Scanning library files...';
+      if (scanSpinnerText) scanSpinnerText.textContent = 'Scanning anime files...';
       scanSpinner.classList.remove('hidden');
     }
 
     const result = await window.api.scanLibrary(this.store.libraryFolder);
+    if (this._activeScanToken !== scanToken || this.currentMode !== 'anime') {
+      if (scanSpinner) scanSpinner.classList.add('hidden');
+      return;
+    }
+
     if (!result.success) {
       this.ui.showToast(`Error scanning: ${result.error}`);
       if (scanSpinner) scanSpinner.classList.add('hidden');
@@ -400,13 +426,15 @@ class AnimeApp {
     if (window.api?.lanUpdateLibrary) window.api.lanUpdateLibrary(this.animeList);
 
     // Fetch AniList metadata in background
-    await this.fetchMetadataForLibrary(forceRefreshMetadata);
+    await this.fetchMetadataForLibrary(forceRefreshMetadata, scanToken);
 
-    if (scanSpinner) scanSpinner.classList.add('hidden');
+    if (this._activeScanToken === scanToken && scanSpinner) {
+      scanSpinner.classList.add('hidden');
+    }
     if (window.api?.lanUpdateLibrary) window.api.lanUpdateLibrary(this.animeList);
   }
 
-  async fetchMetadataForLibrary(forceRefresh = false) {
+  async fetchMetadataForLibrary(forceRefresh = false, scanToken = this._activeScanToken) {
     let updatedCount = 0;
     const scanSpinner = document.getElementById('scanSpinner');
     const scanSpinnerText = scanSpinner ? scanSpinner.querySelector('span:last-child') : null;
@@ -414,6 +442,11 @@ class AnimeApp {
     // Pass 1: apply cached metadata instantly (no spinner, no delay)
     let needsFetch = [];
     for (const anime of this.animeList) {
+      if (this._activeScanToken !== scanToken || this.currentMode !== 'anime') {
+        if (scanSpinner) scanSpinner.classList.add('hidden');
+        return;
+      }
+
       const matchKey = anime.title.toLowerCase();
 
       // Check cache with multiple fallbacks (exact key, rawTitle, or meta.title)
@@ -450,6 +483,11 @@ class AnimeApp {
       needsFetch.push({ anime, type: 'search' });
     }
 
+    if (this._activeScanToken !== scanToken || this.currentMode !== 'anime') {
+      if (scanSpinner) scanSpinner.classList.add('hidden');
+      return;
+    }
+
     if (needsFetch.length === 0) {
       // Everything was cached — populate filters and done
       this.populateGenreFilters();
@@ -461,6 +499,11 @@ class AnimeApp {
     if (scanSpinner) scanSpinner.classList.remove('hidden');
 
     for (let i = 0; i < needsFetch.length; i++) {
+      if (this._activeScanToken !== scanToken || this.currentMode !== 'anime') {
+        if (scanSpinner) scanSpinner.classList.add('hidden');
+        return;
+      }
+
       const { anime, type, customId } = needsFetch[i];
       const matchKey = anime.title.toLowerCase();
 
@@ -472,6 +515,11 @@ class AnimeApp {
         const meta = type === 'custom'
           ? await AnimeMetadata.fetchById(customId)
           : await AnimeMetadata.fetchMetadata(anime.title);
+
+        if (this._activeScanToken !== scanToken || this.currentMode !== 'anime') {
+          if (scanSpinner) scanSpinner.classList.add('hidden');
+          return;
+        }
 
         if (meta) {
           // Download cover and banner images locally for offline use
@@ -493,6 +541,11 @@ class AnimeApp {
 
       // Throttle to respect AniList rate limit (300ms gap)
       await new Promise(r => setTimeout(r, 300));
+    }
+
+    if (this._activeScanToken !== scanToken || this.currentMode !== 'anime') {
+      if (scanSpinner) scanSpinner.classList.add('hidden');
+      return;
     }
 
     if (scanSpinner) scanSpinner.classList.add('hidden');
@@ -1012,36 +1065,84 @@ class AnimeApp {
     const changeFolderCinemaBtn = document.getElementById('btnSettingsChangeCinemaFolder');
 
     const setMode = async (mode) => {
+      // Invalidate running scans immediately
+      const scanToken = ++this._activeScanToken;
+
+      // Close detail view if open
+      if (this.selectedAnime) {
+        this.selectedAnime = null;
+        document.getElementById('detailView')?.classList.add('hidden');
+        document.getElementById('libraryView')?.classList.remove('hidden');
+      }
+
+      // Hide any lingering scan spinner
+      const scanSpinner = document.getElementById('scanSpinner');
+      if (scanSpinner) scanSpinner.classList.add('hidden');
+
+      // Clear search and genre filters
+      this.searchQuery = '';
+      if (searchInput) searchInput.value = '';
+      this.activeGenre = 'ALL';
+      this.activeStatus = 'ALL';
+
       this.currentMode = mode;
       this.store.activeLibraryMode = mode;
       await window.api.saveStore(this.store);
+
+      // Notify in-app browser to switch its sites, default URL, target folder and bookmarks
+      if (this.inAppBrowser) {
+        this.inAppBrowser.setMode(mode);
+      }
 
       if (mode === 'anime') {
         btnAnime?.classList.add('active');
         btnCinema?.classList.remove('active');
         if (brandTitle) brandTitle.innerHTML = 'ANIME<span class="brand-gradient">OPEN</span>';
         if (searchInput) searchInput.placeholder = 'Search anime title, romaji or file...';
-        document.getElementById('currentFolderPathDisplay').textContent = this.store.libraryFolder || 'No folder selected';
+
+        const animeFolder = this.store.libraryFolder || '';
+        const folderDisplay = document.getElementById('currentFolderPathDisplay');
+        if (folderDisplay) folderDisplay.textContent = animeFolder || 'No folder selected';
+
+        const shelfTitle = document.getElementById('mainShelfTitle');
+        if (shelfTitle) shelfTitle.textContent = 'All Anime Collections';
+
         this.updateStatusFiltersForMode('anime');
         this.populateGenreFilters();
         this.applyFilters();
-        if (this.animeList.length === 0 && this.store.libraryFolder) {
-          await this.scanLibrary();
+
+        if (animeFolder) {
+          if (this.animeList.length === 0) {
+            await this.scanLibrary();
+          }
+        } else {
+          this.animeList = [];
+          this.ui.renderLibrary([]);
         }
       } else {
         btnCinema?.classList.add('active');
         btnAnime?.classList.remove('active');
         if (brandTitle) brandTitle.innerHTML = 'CINEMA<span class="brand-gradient" style="background:linear-gradient(135deg, #00c8ff 0%, #7000ff 100%);-webkit-background-clip:text;background-clip:text;">OPEN</span>';
         if (searchInput) searchInput.placeholder = 'Search movies, TV shows, actors, or release year...';
-        const activeFolder = this.store.cinemaFolder || this.store.libraryFolder || 'No folder selected';
-        document.getElementById('currentFolderPathDisplay').textContent = activeFolder;
-        this.updateStatusFiltersForMode('cinema');
 
-        if (this.cinemaList.length === 0 && activeFolder && activeFolder !== 'No folder selected') {
-          await this.scanCinemaLibrary();
+        const cinemaFolder = this.store.cinemaFolder || '';
+        const folderDisplay = document.getElementById('currentFolderPathDisplay');
+        if (folderDisplay) folderDisplay.textContent = cinemaFolder || 'No folder selected';
+
+        const shelfTitle = document.getElementById('mainShelfTitle');
+        if (shelfTitle) shelfTitle.textContent = 'Movies & TV Series Collections';
+
+        this.updateStatusFiltersForMode('cinema');
+        this.populateGenreFilters();
+        this.applyFilters();
+
+        if (cinemaFolder) {
+          if (this.cinemaList.length === 0) {
+            await this.scanCinemaLibrary();
+          }
         } else {
-          this.populateGenreFilters();
-          this.applyFilters();
+          this.cinemaList = [];
+          this.ui.renderLibrary([]);
         }
       }
 
@@ -1072,6 +1173,8 @@ class AnimeApp {
       btnAnime?.classList.remove('active');
       if (brandTitle) brandTitle.innerHTML = 'CINEMA<span class="brand-gradient" style="background:linear-gradient(135deg, #00c8ff 0%, #7000ff 100%);-webkit-background-clip:text;background-clip:text;">OPEN</span>';
       if (searchInput) searchInput.placeholder = 'Search movies, TV shows, actors, or release year...';
+      const shelfTitle = document.getElementById('mainShelfTitle');
+      if (shelfTitle) shelfTitle.textContent = 'Movies & TV Series Collections';
       this.updateStatusFiltersForMode('cinema');
     }
   }
@@ -1100,8 +1203,13 @@ class AnimeApp {
   }
 
   async scanCinemaLibrary(forceRefreshMetadata = false) {
-    const folder = this.store.cinemaFolder || this.store.libraryFolder;
-    if (!folder) return;
+    const scanToken = ++this._activeScanToken;
+    const folder = this.store.cinemaFolder;
+    if (!folder || this.currentMode !== 'cinema') {
+      const scanSpinner = document.getElementById('scanSpinner');
+      if (scanSpinner) scanSpinner.classList.add('hidden');
+      return;
+    }
 
     this.ui.showToast('Scanning Movies & TV Series directory...');
     const scanSpinner = document.getElementById('scanSpinner');
@@ -1112,6 +1220,11 @@ class AnimeApp {
     }
 
     const result = await window.api.scanLibrary(folder);
+    if (this._activeScanToken !== scanToken || this.currentMode !== 'cinema') {
+      if (scanSpinner) scanSpinner.classList.add('hidden');
+      return;
+    }
+
     if (!result.success) {
       this.ui.showToast(`Error scanning: ${result.error}`);
       if (scanSpinner) scanSpinner.classList.add('hidden');
@@ -1127,9 +1240,11 @@ class AnimeApp {
     this.ui.showToast(`Found ${this.cinemaList.length} movies & shows. Resolving metadata...`);
 
     // Fetch Cinema metadata
-    await this.fetchMetadataForCinema(forceRefreshMetadata);
+    await this.fetchMetadataForCinema(forceRefreshMetadata, scanToken);
 
-    if (scanSpinner) scanSpinner.classList.add('hidden');
+    if (this._activeScanToken === scanToken && scanSpinner) {
+      scanSpinner.classList.add('hidden');
+    }
   }
 
   processCinemaFiles(files, baseFolder) {
@@ -1191,10 +1306,16 @@ class AnimeApp {
     return Array.from(groups.values()).sort((a, b) => b.lastModified - a.lastModified);
   }
 
-  async fetchMetadataForCinema(forceRefresh = false) {
+  async fetchMetadataForCinema(forceRefresh = false, scanToken = this._activeScanToken) {
     if (!this.store.cachedCinemaMetadata) this.store.cachedCinemaMetadata = {};
 
     for (let i = 0; i < this.cinemaList.length; i++) {
+      if (this._activeScanToken !== scanToken || this.currentMode !== 'cinema') {
+        const scanSpinner = document.getElementById('scanSpinner');
+        if (scanSpinner) scanSpinner.classList.add('hidden');
+        return;
+      }
+
       const item = this.cinemaList[i];
       const matchKey = item.title.toLowerCase();
 
@@ -1207,6 +1328,12 @@ class AnimeApp {
 
       try {
         const meta = await CinemaMetadata.resolveMetadata(item.title, item.isTv, item.year);
+        if (this._activeScanToken !== scanToken || this.currentMode !== 'cinema') {
+          const scanSpinner = document.getElementById('scanSpinner');
+          if (scanSpinner) scanSpinner.classList.add('hidden');
+          return;
+        }
+
         if (meta) {
           if (meta.cover && window.api.downloadImageCache) {
             try {
@@ -1229,6 +1356,12 @@ class AnimeApp {
       } catch (e) {
         console.warn(`Cinema metadata resolution failed for ${item.title}:`, e.message);
       }
+    }
+
+    if (this._activeScanToken !== scanToken || this.currentMode !== 'cinema') {
+      const scanSpinner = document.getElementById('scanSpinner');
+      if (scanSpinner) scanSpinner.classList.add('hidden');
+      return;
     }
 
     this.populateGenreFilters();
@@ -1984,6 +2117,45 @@ class OSTPlayer {
  * (Nyaa.si, SubsPlease, AnimePahe, HiAnime, Erai-raws, Archive.org).
  * Intercepts downloads so video files/torrents land straight inside the active library folder,
  * with real-time download speed & progress indicators and automatic library rescan upon completion.
+const BROWSER_MODES = {
+  anime: {
+    label: 'Anime Sites:',
+    defaultUrl: 'https://nyaa.si',
+    homeTitle: 'Home (Nyaa)',
+    placeholder: 'Enter URL or search anime releases...',
+    searchUrl: (q) => `https://nyaa.si/?f=0&c=0_0&q=${encodeURIComponent(q)}`,
+    chips: [
+      { label: '🌸 Nyaa.si', url: 'https://nyaa.si' },
+      { label: '⚡ SubsPlease', url: 'https://subsplease.org' },
+      { label: '🍿 AnimePahe', url: 'https://animepahe.ru' },
+      { label: '🎌 HiAnime', url: 'https://hianime.to' },
+      { label: '📼 Erai-raws', url: 'https://www.erai-raws.info' },
+      { label: '📦 Archive.org', url: 'https://archive.org/details/anime' }
+    ]
+  },
+  cinema: {
+    label: 'Movie & TV Sites:',
+    defaultUrl: 'https://yts.mx',
+    homeTitle: 'Home (YTS)',
+    placeholder: 'Enter URL or search movies & TV shows...',
+    searchUrl: (q) => `https://yts.mx/browse-movies/${encodeURIComponent(q)}/all/all/0/latest/0/all`,
+    chips: [
+      { label: '🎬 YTS.mx', url: 'https://yts.mx' },
+      { label: '📺 EZTV', url: 'https://eztv.re' },
+      { label: '🍿 1337x Movies', url: 'https://1337x.to/cat/Movies/1/' },
+      { label: '📽️ 1337x TV', url: 'https://1337x.to/cat/TV/1/' },
+      { label: '📼 Feature Films', url: 'https://archive.org/details/feature_films' },
+      { label: '🎞️ Classic Movies', url: 'https://publicdomainmovie.net' }
+    ]
+  }
+};
+
+/**
+ * InAppBrowser Controller
+ * Provides an embedded web browser with mode-specific portals for Anime vs Cinema
+ * (Nyaa, SubsPlease, AnimePahe vs YTS, EZTV, 1337x, Archive Films).
+ * Intercepts downloads so video files/torrents land straight inside the active library folder,
+ * with real-time download speed & progress indicators and automatic library rescan upon completion.
  */
 class InAppBrowser {
   constructor(app) {
@@ -2037,6 +2209,12 @@ class InAppBrowser {
     this.floatingDockBadge = document.getElementById('floatingBrowserDlBadge');
     this.floatingDockText = document.getElementById('floatingBrowserDockText');
 
+    this.suggestionsLabelEl = document.getElementById('browserSuggestionsLabel');
+    this.builtinChipsContainer = document.getElementById('browserBuiltinChips');
+
+    this.currentBrowserMode = this.app.currentMode || 'anime';
+    this.animeUrl = 'https://nyaa.si';
+    this.cinemaUrl = 'https://yts.mx';
     this.defaultUrl = 'https://nyaa.si';
     this.isOpen = false;
     this.downloads = new Map(); // id -> download item
@@ -2046,7 +2224,60 @@ class InAppBrowser {
     this.bindButtons();
     this.bindWebviewEvents();
     this.bindDownloadEvents();
+    this.setMode(this.app.currentMode || 'anime', false);
+  }
+
+  setMode(mode, shouldNavigate = true) {
+    this.currentBrowserMode = mode;
+    this.renderModeSites(mode);
+    this.updateTargetFolderDisplay();
     this.initBookmarks();
+
+    if (shouldNavigate && this.isOpen) {
+      const target = mode === 'cinema' ? this.cinemaUrl : this.animeUrl;
+      this.navigate(target);
+    }
+  }
+
+  renderModeSites(mode) {
+    const cfg = BROWSER_MODES[mode] || BROWSER_MODES.anime;
+    this.defaultUrl = cfg.defaultUrl;
+    if (this.suggestionsLabelEl) this.suggestionsLabelEl.textContent = cfg.label;
+    if (this.urlInput) this.urlInput.placeholder = cfg.placeholder;
+    if (this.btnHome) this.btnHome.title = cfg.homeTitle;
+
+    if (this.builtinChipsContainer) {
+      this.builtinChipsContainer.innerHTML = '';
+      cfg.chips.forEach(chip => {
+        const btn = document.createElement('button');
+        btn.className = 'suggestion-chip';
+        btn.dataset.url = chip.url;
+        btn.dataset.builtin = 'true';
+        btn.textContent = chip.label;
+        btn.addEventListener('click', () => {
+          this.builtinChipsContainer.querySelectorAll('.suggestion-chip').forEach(c => c.classList.remove('active'));
+          btn.classList.add('active');
+          this.navigate(chip.url);
+        });
+        this.builtinChipsContainer.appendChild(btn);
+      });
+    }
+  }
+
+  updateTargetFolderDisplay() {
+    if (!this.targetFolderEl) return;
+    const isCinema = this.currentBrowserMode === 'cinema';
+    const targetFolder = isCinema ? this.app.store?.cinemaFolder : this.app.store?.libraryFolder;
+    if (targetFolder) {
+      const cleanName = targetFolder.replace(/\\/g, '/').split('/').filter(Boolean).pop() || targetFolder;
+      this.targetFolderEl.textContent = `${isCinema ? '🎬' : '🌸'} ${cleanName}`;
+      this.targetFolderEl.title = `Saving downloads to: ${targetFolder}`;
+    } else {
+      this.targetFolderEl.textContent = isCinema
+        ? '⚠️ Movies Folder not set (Select in Settings)'
+        : '⚠️ Anime Folder not set (Select in Settings)';
+      this.targetFolderEl.title = 'No folder selected for downloads';
+    }
   }
 
   bindButtons() {
@@ -2452,8 +2683,12 @@ class InAppBrowser {
         this.renderDownloadCards();
         this.updateBadgeCounts();
 
-        // Automatically re-scan library so the newly downloaded anime immediately appears!
-        await this.app.scanLibrary(false);
+        // Automatically re-scan library so the newly downloaded item immediately appears!
+        if (this.app.currentMode === 'cinema') {
+          await this.app.scanCinemaLibrary(false);
+        } else {
+          await this.app.scanLibrary(false);
+        }
       });
     }
 
@@ -2523,7 +2758,11 @@ class InAppBrowser {
     if (window.api.onSystemResumed) {
       window.api.onSystemResumed((data) => {
         this.app.ui.showToast('⚡ System awake — AnimeOpen active & checking downloads');
-        this.app.scanLibrary(false);
+        if (this.app.currentMode === 'cinema') {
+          this.app.scanCinemaLibrary(false);
+        } else {
+          this.app.scanLibrary(false);
+        }
       });
     }
   }
@@ -2814,6 +3053,7 @@ class InAppBrowser {
   navigate(rawInput) {
     if (!this.webview) return;
     let url = (rawInput || '').trim();
+    const cfg = BROWSER_MODES[this.currentBrowserMode] || BROWSER_MODES.anime;
 
     if (!url) {
       url = this.defaultUrl;
@@ -2826,8 +3066,14 @@ class InAppBrowser {
       // Domain name without protocol
       url = 'https://' + url;
     } else {
-      // Search term -> query Nyaa
-      url = `https://nyaa.si/?f=0&c=0_0&q=${encodeURIComponent(url)}`;
+      // Search term -> query mode search engine
+      url = cfg.searchUrl(url);
+    }
+
+    if (this.currentBrowserMode === 'cinema') {
+      this.cinemaUrl = url;
+    } else {
+      this.animeUrl = url;
     }
 
     this.urlInput.value = url;
@@ -2841,26 +3087,15 @@ class InAppBrowser {
     if (this.modal) this.modal.classList.remove('hidden');
     if (this.floatingDock) this.floatingDock.classList.add('hidden');
 
-    // Update target library directory banner
-    const libFolder = this.app.store?.libraryFolder;
-    if (this.targetFolderEl) {
-      if (libFolder) {
-        const cleanName = libFolder.replace(/\\/g, '/').split('/').filter(Boolean).pop() || libFolder;
-        this.targetFolderEl.textContent = cleanName;
-        this.targetFolderEl.title = `Saving to: ${libFolder}`;
-      } else {
-        this.targetFolderEl.textContent = 'Default Downloads (Select Folder in Settings)';
-      }
-    }
-
-    if (!libFolder) {
-      this.app.ui.showToast('💡 Tip: Set your anime library folder in Settings so series subfolders are organized automatically!');
-    }
+    this.setMode(this.app.currentMode || 'anime', false);
 
     if (initialUrl) {
       this.navigate(initialUrl);
-    } else if (!this.webview.src || this.webview.src === 'about:blank') {
-      this.navigate(this.defaultUrl);
+    } else {
+      const target = this.currentBrowserMode === 'cinema' ? this.cinemaUrl : this.animeUrl;
+      if (!this.webview.src || this.webview.src === 'about:blank' || this.webview.src !== target) {
+        this.navigate(target);
+      }
     }
   }
 
@@ -2887,18 +3122,19 @@ class InAppBrowser {
 
   async initBookmarks() {
     this.bookmarks = [];
+    const storeKey = this.currentBrowserMode === 'cinema' ? 'cinemaBookmarks' : 'browserBookmarks';
     try {
-      const saved = await window.api.getStore('browserBookmarks');
+      const saved = await window.api.getStore(storeKey);
       if (Array.isArray(saved)) {
         this.bookmarks = saved;
-      } else if (saved && typeof saved === 'object' && Array.isArray(saved.browserBookmarks)) {
-        this.bookmarks = saved.browserBookmarks;
-      } else if (this.app?.store?.browserBookmarks && Array.isArray(this.app.store.browserBookmarks)) {
-        this.bookmarks = this.app.store.browserBookmarks;
+      } else if (saved && typeof saved === 'object' && Array.isArray(saved[storeKey])) {
+        this.bookmarks = saved[storeKey];
+      } else if (this.app?.store?.[storeKey] && Array.isArray(this.app.store[storeKey])) {
+        this.bookmarks = this.app.store[storeKey];
       }
     } catch (_) {
-      if (this.app?.store?.browserBookmarks && Array.isArray(this.app.store.browserBookmarks)) {
-        this.bookmarks = this.app.store.browserBookmarks;
+      if (this.app?.store?.[storeKey] && Array.isArray(this.app.store[storeKey])) {
+        this.bookmarks = this.app.store[storeKey];
       }
     }
     this.renderBookmarks();
@@ -2907,12 +3143,13 @@ class InAppBrowser {
   }
 
   async saveBookmarks() {
+    const storeKey = this.currentBrowserMode === 'cinema' ? 'cinemaBookmarks' : 'browserBookmarks';
     try {
       if (this.app?.store) {
-        this.app.store.browserBookmarks = this.bookmarks;
+        this.app.store[storeKey] = this.bookmarks;
       }
       if (window.api?.setStore) {
-        await window.api.setStore('browserBookmarks', this.bookmarks);
+        await window.api.setStore(storeKey, this.bookmarks);
       }
       if (window.api?.saveStore && this.app?.store) {
         await window.api.saveStore(this.app.store);

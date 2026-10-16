@@ -203,10 +203,10 @@
       <!-- All Anime Library Grid -->
       <section class="shelf-section">
         <div class="shelf-header">
-          <h2 class="shelf-title">All Anime Collections</h2>
+          <h2 class="shelf-title" id="mainShelfTitle">All Anime Collections</h2>
           <div class="shelf-spinner hidden" id="scanSpinner">
             <span class="spinner-dot"></span>
-            <span>Scanning library & fetching metadata...</span>
+            <span id="scanSpinnerText">Scanning library & fetching metadata...</span>
           </div>
         </div>
 
@@ -222,17 +222,17 @@
               <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/>
             </svg>
           </div>
-          <h2>Welcome to AnimeOpen</h2>
-          <p>Choose your local anime folder. AnimeOpen will automatically detect series, seasons, episodes, and streamable zip archives with high-res AniList artwork!</p>
+          <h2 id="emptyStateTitle">Welcome to AnimeOpen</h2>
+          <p id="emptyStateDesc">Choose your local anime folder. AnimeOpen will automatically detect series, seasons, episodes, and streamable zip archives with high-res AniList artwork!</p>
           <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
             <button class="btn-primary" id="btnSelectFolderPrompt">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
                 <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
               </svg>
-              Select Anime Folder
+              <span id="btnSelectFolderPromptText">Select Anime Folder</span>
             </button>
             <button class="btn-secondary" id="btnEmptyBrowsePrompt">
-              🌐 Add Anime from Web
+              <span id="btnEmptyBrowsePromptText">🌐 Add Anime from Web</span>
             </button>
           </div>
         </div>
@@ -997,13 +997,8 @@
 
       <!-- Quick Suggestions + Dynamic Bookmarks Strip -->
       <div class="browser-suggestions-strip" id="browserSuggestionsStrip">
-        <span class="suggestions-label">Anime Sites:</span>
-        <button class="suggestion-chip active" data-url="https://nyaa.si" data-builtin="true">🌸 Nyaa.si</button>
-        <button class="suggestion-chip" data-url="https://subsplease.org" data-builtin="true">⚡ SubsPlease</button>
-        <button class="suggestion-chip" data-url="https://animepahe.ru" data-builtin="true">🍿 AnimePahe</button>
-        <button class="suggestion-chip" data-url="https://hianime.to" data-builtin="true">🎌 HiAnime</button>
-        <button class="suggestion-chip" data-url="https://www.erai-raws.info" data-builtin="true">📼 Erai-raws</button>
-        <button class="suggestion-chip" data-url="https://archive.org/details/anime" data-builtin="true">📦 Archive.org</button>
+        <span class="suggestions-label" id="browserSuggestionsLabel">Anime Sites:</span>
+        <div class="browser-builtin-chips" id="browserBuiltinChips" style="display:inline-flex;gap:6px;align-items:center;"></div>
         <!-- Dynamic bookmarks injected here by JS -->
         <span class="bookmarks-divider hidden" id="bookmarksDivider">|</span>
         <span class="suggestions-label bookmarks-strip-label hidden" id="bookmarksStripLabel">My Bookmarks:</span>

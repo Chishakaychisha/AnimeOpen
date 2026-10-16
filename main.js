@@ -436,6 +436,41 @@ function deriveAnimeFolderName(rawName) {
   return clean || 'Anime Downloads';
 }
 
+function getActiveTargetFolder(store) {
+  if (store.activeLibraryMode === 'cinema' && store.cinemaFolder) {
+    return store.cinemaFolder;
+  }
+  return store.libraryFolder || app.getPath('downloads');
+}
+
+function deriveMediaFolderName(rawName, isCinema = false) {
+  if (isCinema) {
+    if (!rawName) return 'Movies & TV Series';
+    let clean = rawName.replace(/\.(mp4|mkv|webm|avi|mov|m4v|ts|zip|torrent)$/i, '');
+    clean = clean.replace(/^(yts|yify|eztv|rarbg|psa|galaxytv|vxt)\s*[-_.]?\s*/i, '');
+    clean = clean.replace(/[_.]/g, ' ');
+    // Match TV show with season: e.g. "Game of Thrones S01E02" -> "Game of Thrones"
+    const tvMatch = clean.match(/^(.+?)[ ._-]+[sS](\d+)/i);
+    if (tvMatch) {
+      return tvMatch[1].replace(/[\\/:*?"<>|]/g, '').trim();
+    }
+    // Match Movie with year: e.g. "Inception 2010" -> "Inception (2010)"
+    const movieYearMatch = clean.match(/^(.+?)[ ._-]+(19\d{2}|20\d{2})/i);
+    if (movieYearMatch) {
+      const title = movieYearMatch[1].replace(/[\\/:*?"<>|]/g, '').trim();
+      return `${title} (${movieYearMatch[2]})`;
+    }
+    clean = clean.replace(/\[[^\]]+\]/g, ' ')
+                 .replace(/\([^\)]+\)/g, ' ')
+                 .replace(/\b(1080p|720p|480p|2160p|4k|uhd|bluray|web-dl|webrip|brrip|x264|x265|hevc|h264|h265|aac|dts)\b/gi, ' ')
+                 .replace(/\s+/g, ' ')
+                 .trim();
+    clean = clean.replace(/[\\/:*?"<>|]/g, '').trim();
+    return clean || 'Movies & TV Series';
+  }
+  return deriveAnimeFolderName(rawName);
+}
+
 // Active downloads map: id -> { id, type: 'electron'|'torrent', item/torrent, filename, seriesFolder, savePath, state, url, totalBytes }
 const activeDownloads = new Map();
 // Pending folder mapping for refreshed links: url -> seriesFolder
@@ -602,7 +637,8 @@ async function addTorrentToDownload(torrentInput) {
     if (!client) throw new Error('Torrent engine could not be loaded');
 
     const store = loadStore();
-    const baseDir = store.libraryFolder || app.getPath('downloads');
+    const isCinema = store.activeLibraryMode === 'cinema';
+    const baseDir = getActiveTargetFolder(store);
     const downloadId = 'torrent_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
 
     const maxActive = (store.maxConcurrentDownloads !== undefined && store.maxConcurrentDownloads > 0)
@@ -615,7 +651,7 @@ async function addTorrentToDownload(torrentInput) {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('download:started', {
         id: downloadId,
-        filename: 'Resolving anime torrent & peers...',
+        filename: `Resolving ${isCinema ? 'media' : 'anime'} torrent & peers...`,
         seriesFolder: 'Detecting...',
         totalBytes: 0,
         isTorrent: true,
@@ -624,7 +660,7 @@ async function addTorrentToDownload(torrentInput) {
     }
 
     client.add(torrentInput, { path: baseDir }, (torrent) => {
-      const seriesFolder = deriveAnimeFolderName(torrent.name);
+      const seriesFolder = deriveMediaFolderName(torrent.name, isCinema);
       const targetDir = path.join(baseDir, seriesFolder);
       if (!fs.existsSync(targetDir)) {
         fs.mkdirSync(targetDir, { recursive: true });
@@ -740,13 +776,14 @@ function setupDownloadInterception() {
     if (!sess) return;
     sess.on('will-download', (event, item, webContents) => {
       const store = loadStore();
-      const baseDir = store.libraryFolder || app.getPath('downloads');
+      const isCinema = store.activeLibraryMode === 'cinema';
+      const baseDir = getActiveTargetFolder(store);
       const filename = item.getFilename();
       const itemUrl = item.getURL();
 
       // Intercept .torrent files and download content via built-in WebTorrent!
       if (filename.toLowerCase().endsWith('.torrent')) {
-        const tempTorrentPath = path.join(app.getPath('temp'), `anime_${Date.now()}_${filename}`);
+        const tempTorrentPath = path.join(app.getPath('temp'), `media_${Date.now()}_${filename}`);
         item.setSavePath(tempTorrentPath);
         item.once('done', (e, state) => {
           if (state === 'completed') {
@@ -763,8 +800,9 @@ function setupDownloadInterception() {
       }
 
       // Normal video / archive download -> place in series folder
-      const seriesFolder = preservedFolder || deriveAnimeFolderName(filename);
-      const targetDir = store.libraryFolder ? path.join(baseDir, seriesFolder) : baseDir;
+      const seriesFolder = preservedFolder || deriveMediaFolderName(filename, isCinema);
+      const activeLib = isCinema ? store.cinemaFolder : store.libraryFolder;
+      const targetDir = activeLib ? path.join(baseDir, seriesFolder) : baseDir;
 
       try {
         if (!fs.existsSync(targetDir)) {
@@ -1075,8 +1113,13 @@ ipcMain.handle('store:get', (event, key) => {
 ipcMain.handle('store:set', (event, newStoreData) => {
   const oldStore = loadStore();
   const res = saveStore(newStoreData);
-  if (newStoreData && newStoreData.libraryFolder && newStoreData.libraryFolder !== oldStore.libraryFolder) {
-    startFolderWatcher(newStoreData.libraryFolder);
+  if (newStoreData) {
+    const isCinema = newStoreData.activeLibraryMode === 'cinema';
+    const activeDir = isCinema ? newStoreData.cinemaFolder : newStoreData.libraryFolder;
+    const oldActiveDir = oldStore.activeLibraryMode === 'cinema' ? oldStore.cinemaFolder : oldStore.libraryFolder;
+    if (activeDir && activeDir !== oldActiveDir) {
+      startFolderWatcher(activeDir);
+    }
   }
   return res;
 });

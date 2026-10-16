@@ -38,7 +38,32 @@ class AnimeUI {
       emptyState.classList.remove('hidden');
       if (continueSection) continueSection.classList.add('hidden');
       if (heroBanner) heroBanner.classList.add('hidden');
+
+      const isCinema = this.app?.currentMode === 'cinema';
+      const emptyTitle = document.getElementById('emptyStateTitle');
+      const emptyDesc = document.getElementById('emptyStateDesc');
+      const selectBtnText = document.getElementById('btnSelectFolderPromptText');
+      const browseBtnText = document.getElementById('btnEmptyBrowsePromptText');
+
+      if (isCinema) {
+        if (emptyTitle) emptyTitle.textContent = 'Welcome to CinemaOpen';
+        if (emptyDesc) emptyDesc.textContent = 'Choose your local Movies & TV Series folder. CinemaOpen will automatically organize movies, seasons, and episodes with rich metadata & artwork!';
+        if (selectBtnText) selectBtnText.textContent = 'Select Movies & TV Folder';
+        if (browseBtnText) browseBtnText.textContent = '🎬 Find Movies & TV Shows';
+      } else {
+        if (emptyTitle) emptyTitle.textContent = 'Welcome to AnimeOpen';
+        if (emptyDesc) emptyDesc.textContent = 'Choose your local anime folder. AnimeOpen will automatically detect series, seasons, episodes, and streamable zip archives with high-res AniList artwork!';
+        if (selectBtnText) selectBtnText.textContent = 'Select Anime Folder';
+        if (browseBtnText) browseBtnText.textContent = '🌐 Add Anime from Web';
+      }
       return;
+    }
+
+    const shelfTitle = document.getElementById('mainShelfTitle');
+    if (shelfTitle) {
+      shelfTitle.textContent = this.app?.currentMode === 'cinema'
+        ? 'Movies & TV Series Collections'
+        : 'All Anime Collections';
     }
 
     emptyState.classList.add('hidden');
