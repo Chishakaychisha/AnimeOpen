@@ -343,6 +343,10 @@ body.in-player .theme-wallpaper-container {
   align-items: center;
   gap: 6px;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-app-region: no-drag !important;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 10;
 }
 
 .mode-switch-btn:hover {

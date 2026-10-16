@@ -82,7 +82,9 @@ class AnimeApp {
 
     // Load persisted store
     this.store = await window.api.getStore();
-    this.currentMode = this.store.activeLibraryMode || 'anime';
+    // Always default to 'anime' mode on application startup
+    this.currentMode = 'anime';
+    this.store.activeLibraryMode = 'anime';
     this.initWallpaperSettings();
     this.applyTheme(this.store.theme || 'oled');
     this.bindThemeSelector();
@@ -1065,88 +1067,93 @@ class AnimeApp {
     const changeFolderCinemaBtn = document.getElementById('btnSettingsChangeCinemaFolder');
 
     const setMode = async (mode) => {
-      // Invalidate running scans immediately
-      const scanToken = ++this._activeScanToken;
+      try {
+        // Invalidate running scans immediately
+        const scanToken = ++this._activeScanToken;
 
-      // Close detail view if open
-      if (this.selectedAnime) {
-        this.selectedAnime = null;
-        document.getElementById('detailView')?.classList.add('hidden');
-        document.getElementById('libraryView')?.classList.remove('hidden');
-      }
+        // Close detail view if open
+        if (this.selectedAnime) {
+          this.selectedAnime = null;
+          document.getElementById('detailView')?.classList.add('hidden');
+          document.getElementById('libraryView')?.classList.remove('hidden');
+        }
 
-      // Hide any lingering scan spinner
-      const scanSpinner = document.getElementById('scanSpinner');
-      if (scanSpinner) scanSpinner.classList.add('hidden');
+        // Hide any lingering scan spinner
+        const scanSpinner = document.getElementById('scanSpinner');
+        if (scanSpinner) scanSpinner.classList.add('hidden');
 
-      // Clear search and genre filters
-      this.searchQuery = '';
-      if (searchInput) searchInput.value = '';
-      this.activeGenre = 'ALL';
-      this.activeStatus = 'ALL';
+        // Clear search and genre filters
+        this.searchQuery = '';
+        if (searchInput) searchInput.value = '';
+        this.activeGenre = 'ALL';
+        this.activeStatus = 'ALL';
 
-      this.currentMode = mode;
-      this.store.activeLibraryMode = mode;
-      await window.api.saveStore(this.store);
+        this.currentMode = mode;
+        this.store.activeLibraryMode = mode;
+        await window.api.saveStore(this.store);
 
-      // Notify in-app browser to switch its sites, default URL, target folder and bookmarks
-      if (this.inAppBrowser) {
-        this.inAppBrowser.setMode(mode);
-      }
+        // Notify in-app browser to switch its sites, default URL, target folder and bookmarks
+        if (this.inAppBrowser) {
+          this.inAppBrowser.setMode(mode);
+        }
 
-      if (mode === 'anime') {
-        btnAnime?.classList.add('active');
-        btnCinema?.classList.remove('active');
-        if (brandTitle) brandTitle.innerHTML = 'ANIME<span class="brand-gradient">OPEN</span>';
-        if (searchInput) searchInput.placeholder = 'Search anime title, romaji or file...';
+        if (mode === 'anime') {
+          btnAnime?.classList.add('active');
+          btnCinema?.classList.remove('active');
+          if (brandTitle) brandTitle.innerHTML = 'ANIME<span class="brand-gradient">OPEN</span>';
+          if (searchInput) searchInput.placeholder = 'Search anime title, romaji or file...';
 
-        const animeFolder = this.store.libraryFolder || '';
-        const folderDisplay = document.getElementById('currentFolderPathDisplay');
-        if (folderDisplay) folderDisplay.textContent = animeFolder || 'No folder selected';
+          const animeFolder = this.store.libraryFolder || '';
+          const folderDisplay = document.getElementById('currentFolderPathDisplay');
+          if (folderDisplay) folderDisplay.textContent = animeFolder || 'No folder selected';
 
-        const shelfTitle = document.getElementById('mainShelfTitle');
-        if (shelfTitle) shelfTitle.textContent = 'All Anime Collections';
+          const shelfTitle = document.getElementById('mainShelfTitle');
+          if (shelfTitle) shelfTitle.textContent = 'All Anime Collections';
 
-        this.updateStatusFiltersForMode('anime');
-        this.populateGenreFilters();
-        this.applyFilters();
+          this.updateStatusFiltersForMode('anime');
+          this.populateGenreFilters();
+          this.applyFilters();
 
-        if (animeFolder) {
-          if (this.animeList.length === 0) {
-            await this.scanLibrary();
+          if (animeFolder) {
+            if (this.animeList.length === 0) {
+              await this.scanLibrary();
+            }
+          } else {
+            this.animeList = [];
+            this.ui.renderLibrary([]);
           }
         } else {
-          this.animeList = [];
-          this.ui.renderLibrary([]);
-        }
-      } else {
-        btnCinema?.classList.add('active');
-        btnAnime?.classList.remove('active');
-        if (brandTitle) brandTitle.innerHTML = 'CINEMA<span class="brand-gradient" style="background:linear-gradient(135deg, #00c8ff 0%, #7000ff 100%);-webkit-background-clip:text;background-clip:text;">OPEN</span>';
-        if (searchInput) searchInput.placeholder = 'Search movies, TV shows, actors, or release year...';
+          btnCinema?.classList.add('active');
+          btnAnime?.classList.remove('active');
+          if (brandTitle) brandTitle.innerHTML = 'CINEMA<span class="brand-gradient" style="background:linear-gradient(135deg, #00c8ff 0%, #7000ff 100%);-webkit-background-clip:text;background-clip:text;">OPEN</span>';
+          if (searchInput) searchInput.placeholder = 'Search movies, TV shows, actors, or release year...';
 
-        const cinemaFolder = this.store.cinemaFolder || '';
-        const folderDisplay = document.getElementById('currentFolderPathDisplay');
-        if (folderDisplay) folderDisplay.textContent = cinemaFolder || 'No folder selected';
+          const cinemaFolder = this.store.cinemaFolder || '';
+          const folderDisplay = document.getElementById('currentFolderPathDisplay');
+          if (folderDisplay) folderDisplay.textContent = cinemaFolder || 'No folder selected';
 
-        const shelfTitle = document.getElementById('mainShelfTitle');
-        if (shelfTitle) shelfTitle.textContent = 'Movies & TV Series Collections';
+          const shelfTitle = document.getElementById('mainShelfTitle');
+          if (shelfTitle) shelfTitle.textContent = 'Movies & TV Series Collections';
 
-        this.updateStatusFiltersForMode('cinema');
-        this.populateGenreFilters();
-        this.applyFilters();
+          this.updateStatusFiltersForMode('cinema');
+          this.populateGenreFilters();
+          this.applyFilters();
 
-        if (cinemaFolder) {
-          if (this.cinemaList.length === 0) {
-            await this.scanCinemaLibrary();
+          if (cinemaFolder) {
+            if (this.cinemaList.length === 0) {
+              await this.scanCinemaLibrary();
+            }
+          } else {
+            this.cinemaList = [];
+            this.ui.renderLibrary([]);
           }
-        } else {
-          this.cinemaList = [];
-          this.ui.renderLibrary([]);
         }
-      }
 
-      this.ui.showToast(`Switched to ${mode === 'anime' ? '🌸 Anime' : '🎬 Movies & TV Series'} Collection`);
+        this.ui.showToast(`Switched to ${mode === 'anime' ? '🌸 Anime' : '🎬 Movies & TV Series'} Collection`);
+      } catch (err) {
+        console.error('Mode switch failed:', err);
+        this.ui.showToast(`Mode switch error: ${err.message}`);
+      }
     };
 
     btnAnime?.addEventListener('click', () => setMode('anime'));
@@ -2111,12 +2118,6 @@ class OSTPlayer {
   }
 }
 
-/**
- * InAppBrowser Controller
- * Provides an embedded web browser to popular anime distribution & streaming portals
- * (Nyaa.si, SubsPlease, AnimePahe, HiAnime, Erai-raws, Archive.org).
- * Intercepts downloads so video files/torrents land straight inside the active library folder,
- * with real-time download speed & progress indicators and automatic library rescan upon completion.
 const BROWSER_MODES = {
   anime: {
     label: 'Anime Sites:',
