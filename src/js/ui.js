@@ -361,7 +361,9 @@ class AnimeUI {
     const epCountBadge = document.getElementById('detailEpCountBadge');
 
     // Backdrop & Poster — prefer locally cached images
-    const fallback = AnimeMetadata.getFallbackPoster(anime.title);
+    const fallback = (this.app?.currentMode === 'cinema')
+      ? CinemaMetadata.getFallbackCinemaPoster(anime.title)
+      : AnimeMetadata.getFallbackPoster(anime.title);
     const coverUrl = meta.localCover
       ? window.api.getLocalImageUrl(meta.localCover)
       : meta.cover;
@@ -669,6 +671,22 @@ class AnimeUI {
         this.app.openManualMetaModal(anime);
       };
     }
+
+    // Watch Trailer button
+    const btnTrailer = document.getElementById('btnDetailWatchTrailer');
+    if (btnTrailer) {
+      btnTrailer.onclick = () => {
+        this.app.trailerModal.open(anime);
+      };
+    }
+
+    // Queue All button
+    const btnQueueAll = document.getElementById('btnDetailQueueAll');
+    if (btnQueueAll) {
+      btnQueueAll.onclick = () => {
+        this.app.queueManager.addMultiple(anime, anime.episodes);
+      };
+    }
   }
 
   createEpisodeRow(anime, episode, index) {
@@ -706,12 +724,20 @@ class AnimeUI {
         ${progressLine}
       </div>
       <div class="ep-actions">
+        <button class="btn-ep-queue" title="Add to Marathon Queue">
+          ➕ Queue
+        </button>
         <button class="btn-ep-play" title="Play episode">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
           Play
         </button>
       </div>
     `;
+
+    row.querySelector('.btn-ep-queue').addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.app.queueManager.add(anime, episode);
+    });
 
     row.querySelector('.btn-ep-play').addEventListener('click', (e) => {
       e.stopPropagation();
@@ -723,6 +749,82 @@ class AnimeUI {
     });
 
     return row;
+  }
+
+  renderSagasView(sagas) {
+    const grid = document.getElementById('animeGrid');
+    const shelfTitle = document.getElementById('mainShelfTitle');
+    if (shelfTitle) shelfTitle.textContent = `🌟 Franchises & Cinematic Sagas (${sagas.length} Collections)`;
+
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (sagas.length === 0) {
+      grid.innerHTML = `
+        <div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #888;">
+          <div style="font-size: 3rem; margin-bottom: 12px;">🌌</div>
+          <h3>No Connected Franchises Detected Yet</h3>
+          <p style="font-size: 0.9rem; margin-top: 6px;">Add movies or shows from MCU, Batman, Star Wars, Harry Potter, Dragon Ball, Naruto, etc. to automatically unlock Sagas!</p>
+        </div>
+      `;
+      return;
+    }
+
+    sagas.forEach(saga => {
+      const card = document.createElement('div');
+      card.className = 'saga-card';
+      card.style.background = saga.backdropGradient;
+
+      card.innerHTML = `
+        <div class="saga-header">
+          <span class="saga-badge">${saga.badge}</span>
+          <span class="saga-count">${saga.itemCount} ${saga.itemCount === 1 ? 'Title' : 'Titles'}</span>
+        </div>
+        <div class="saga-body">
+          <h2 class="saga-title">${saga.name}</h2>
+          <p class="saga-desc">${saga.description}</p>
+          <div class="saga-titles-list">
+            ${saga.items.slice(0, 5).map((it, idx) => `
+              <div class="saga-title-pill">
+                <span class="saga-pill-num">${idx + 1}</span>
+                <span class="saga-pill-name">${it.metadata?.title || it.title} (${it.metadata?.year || it.year || 'Film'})</span>
+              </div>
+            `).join('')}
+            ${saga.items.length > 5 ? `<div class="saga-title-pill more">+${saga.items.length - 5} more</div>` : ''}
+          </div>
+        </div>
+        <div class="saga-footer">
+          <button class="btn-primary btn-binge-saga">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            Binge Saga
+          </button>
+          <button class="btn-secondary btn-view-saga">
+            View Titles
+          </button>
+        </div>
+      `;
+
+      card.querySelector('.btn-binge-saga').onclick = (e) => {
+        e.stopPropagation();
+        this.app.queueManager.clear();
+        saga.items.forEach(it => {
+          if (it.episodes && it.episodes.length > 0) {
+            this.app.queueManager.addMultiple(it, it.episodes);
+          }
+        });
+        this.app.queueManager.playFromIndex(0);
+        this.app.ui.showToast(`🚀 Binge Marathon started for ${saga.name}!`);
+      };
+
+      card.querySelector('.btn-view-saga').onclick = (e) => {
+        e.stopPropagation();
+        this.app.searchQuery = saga.name.split(' ')[0].toLowerCase();
+        this.app.activeGenre = 'ALL';
+        this.app.applyFilters();
+      };
+
+      grid.appendChild(card);
+    });
   }
 
   formatBytes(bytes) {

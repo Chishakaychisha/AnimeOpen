@@ -17,6 +17,32 @@ AnimeOpen brings a premium Netflix / Crunchyroll-grade streaming experience dire
 
 ---
 
+### 🚀 LAN Sharing, Remote Companion & Superpowers
+
+- **🌐 Mobile Companion Web Remote & QR Code Controller**:
+  - Scan the high-resolution QR code on your phone or tablet to open a responsive web remote on your home Wi-Fi.
+  - Full wireless control: Play/Pause, ±10s seek, volume scrubbing, episode navigation, and fullscreen toggle from the couch.
+- **🎬 Smart Auto-Skip Intros, Recaps & Outros (Anime & Cinema)**:
+  - Integrated AniSkip API with smart fallback that detects theme song chapters and offers interactive "Skip Intro" and "Skip Outro" buttons.
+  - Automatically advances to the next episode seamlessly, Netflix-style.
+- **🍿 Official Movie & Anime Trailer Player**:
+  - Click the **"Trailer"** button on any movie, TV series, or anime card to stream the official 4K/1080p theatrical trailer directly in an overlay modal.
+- **🌟 Franchise & Cinematic Universe Sagas**:
+  - Automatically clusters related movies and anime into chronological sagas (Marvel Cinematic Universe, Batman Anthology, Harry Potter, Star Wars, Lord of the Rings, John Wick, Dragon Ball, Naruto, Demon Slayer, etc.).
+  - Includes a 1-click **"Binge Saga"** button to queue the entire universe in chronological order.
+- **📺 Binge Marathon Queue**:
+  - Continuous autoplay queue across anime episodes, movies, and TV shows.
+  - Add individual episodes via the `➕ Queue` button or queue an entire series with `Queue All`.
+- **🌸 Anime Opening & Ending (OP/ED) Jukebox & Music Vault**:
+  - Dedicated music vault tab featuring official opening and ending themes from your collection, playable as standalone music or video previews.
+- **📖 Manga Reader Companion**:
+  - Built-in reader supporting `.cbz`, `.cbr`, `.zip`, and image folders.
+  - Supports Japanese Right-to-Left (RTL), Western Left-to-Right (LTR), dual-page spread, and continuous Webtoon vertical scroll with dark paper background.
+- **📺 Chromecast & DLNA "Cast to TV" Support**:
+  - Cast endpoints (`/api/stream/cast`) allowing you to stream local videos directly to Smart TVs, Apple TV, or Chromecast devices on your network.
+
+---
+
 ### 🍿 Netflix-Style Hero Banner & Continue Watching Shelf
 
 - **Recently Added / Featured Hero Banner**: A cinematic backdrop banner at the top of your library displaying high-resolution artwork, bold title typography, release year, episode count, community ratings, AniList synopses, and a bottom-right "Recently Added" badge.

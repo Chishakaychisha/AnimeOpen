@@ -20,6 +20,7 @@ class AnimePlayer {
     this.bindEvents();
     this.bindKeyboardShortcuts();
     this.bindGlobalKeys();
+    this.bindRemoteCommands();
     this.initSubtitleStyles();
     this.bindOnlineSubtitlesModal();
   }
@@ -56,6 +57,8 @@ class AnimePlayer {
     this.subTrackMenu     = document.getElementById('subtitleTrackMenu');
     this.subTrackCtrl     = document.getElementById('subtitleTrackControl');
     // AniSkip & Tools
+    this.skipIntroBtn     = document.getElementById('btnSkipIntro');
+    this.skipEndingBtn    = document.getElementById('btnSkipEnding');
     this.screenshotBtn    = document.getElementById('btnPlayerScreenshot');
     this.externalPlayerBtn = document.getElementById('btnPlayerExternal');
     // Netflix-style Intro Bumper
@@ -73,11 +76,24 @@ class AnimePlayer {
 
     // Video standard events
     this.video.addEventListener('timeupdate', () => this.onTimeUpdate());
-    this.video.addEventListener('loadedmetadata', () => this.onLoadedMetadata());
+    this.video.addEventListener('loadedmetadata', () => {
+      this.onLoadedMetadata();
+      this.sendPlaybackState();
+    });
     this.video.addEventListener('progress', () => this.updateBuffer());
-    this.video.addEventListener('ended', () => this.onEnded());
-    this.video.addEventListener('play', () => this.updatePlayIcon(true));
-    this.video.addEventListener('pause', () => this.updatePlayIcon(false));
+    this.video.addEventListener('ended', () => {
+      this.onEnded();
+      this.sendPlaybackState();
+    });
+    this.video.addEventListener('play', () => {
+      this.updatePlayIcon(true);
+      this.sendPlaybackState();
+    });
+    this.video.addEventListener('pause', () => {
+      this.updatePlayIcon(false);
+      this.sendPlaybackState();
+    });
+    this.video.addEventListener('volumechange', () => this.sendPlaybackState());
     this.video.addEventListener('click', () => this.togglePlay());
     this.video.addEventListener('dblclick', () => this.toggleFullscreen());
     this.video.addEventListener('error', () => {
@@ -225,6 +241,85 @@ class AnimePlayer {
           }
           break;
       }
+    });
+  }
+
+  bindRemoteCommands() {
+    if (window.api?.onRemoteCommand) {
+      window.api.onRemoteCommand((cmd) => {
+        if (!cmd) return;
+        switch (cmd.action) {
+          case 'togglePlay':
+            this.togglePlay();
+            break;
+          case 'play':
+            this.video.play().catch(() => {});
+            break;
+          case 'pause':
+            this.video.pause();
+            break;
+          case 'seek':
+            if (typeof cmd.time === 'number') this.video.currentTime = cmd.time;
+            break;
+          case 'seekRel':
+            if (typeof cmd.delta === 'number') {
+              this.video.currentTime = Math.max(0, Math.min(this.video.duration || 0, this.video.currentTime + cmd.delta));
+            }
+            break;
+          case 'nextEp':
+            this.playNextEpisode();
+            break;
+          case 'prevEp':
+            this.playPreviousEpisode();
+            break;
+          case 'skipIntro':
+            this.skipIntro();
+            break;
+          case 'skipEnding':
+            this.skipEnding();
+            break;
+          case 'toggleFullscreen':
+            this.toggleFullscreen();
+            break;
+          case 'setVolume':
+            if (typeof cmd.volume === 'number') {
+              this.video.volume = Math.max(0, Math.min(1, cmd.volume));
+              this.volumeSlider.value = this.video.volume;
+              this.updateVolumeIcon();
+            }
+            break;
+          case 'toggleMute':
+            this.video.muted = !this.video.muted;
+            this.updateVolumeIcon();
+            break;
+        }
+        this.sendPlaybackState();
+      });
+    }
+  }
+
+  playEpisode(anime, episode) {
+    return this.loadEpisode(anime, episode);
+  }
+
+  sendPlaybackState() {
+    if (!window.api?.sendPlaybackState || !this.video) return;
+    const isPlaying = !this.video.paused && !this.video.ended;
+    const mainTitle = this.currentAnime?.metadata?.title || this.currentAnime?.title || this.titleHeader?.textContent || 'AnimeOpen';
+    const epTitle = this.currentEpisode?.displayTitle || this.currentEpisode?.fileName || this.epHeader?.textContent || 'Ready to stream';
+    const coverUrl = this.currentAnime?.metadata?.cover || '';
+
+    window.api.sendPlaybackState({
+      playing: isPlaying,
+      currentTime: this.video.currentTime || 0,
+      duration: this.video.duration || 0,
+      title: mainTitle,
+      episodeTitle: epTitle,
+      cover: coverUrl,
+      volume: this.video.volume,
+      muted: this.video.muted,
+      filePath: this.currentEpisode?.filePath || null,
+      isCinema: this.app.currentMode === 'cinema'
     });
   }
 
@@ -701,7 +796,7 @@ class AnimePlayer {
     this.progressFill.style.width = `${percent}%`;
     this.timeDisplay.textContent = `${this.formatTime(current)} / ${this.formatTime(duration)}`;
 
-    // AniSkip Opening Detection
+    // Intro / Opening Detection (AniSkip or Smart 85s Intro)
     if (this.skipIntervals?.op) {
       const { start, end } = this.skipIntervals.op;
       if (current >= start && current < end) {
@@ -709,14 +804,25 @@ class AnimePlayer {
           this.video.currentTime = end;
           this.app.ui.showToast('⏭️ Auto-skipped Opening!');
         } else {
-          this.skipIntroBtn?.classList.remove('hidden');
+          if (this.skipIntroBtn) {
+            this.skipIntroBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg> Skip Opening';
+            this.skipIntroBtn.classList.remove('hidden');
+          }
         }
       } else {
         this.skipIntroBtn?.classList.add('hidden');
       }
+    } else if (current >= 15 && current <= 165 && duration > 450 && (this.currentAnime?.isTv || this.app.currentMode === 'anime')) {
+      if (this.skipIntroBtn) {
+        this.skipIntroBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg> Skip Intro (+85s)';
+        this.skipIntroBtn.classList.remove('hidden');
+      }
+    } else {
+      this.skipIntroBtn?.classList.add('hidden');
     }
 
-    // AniSkip Ending Detection
+    // Outro / Ending Detection (AniSkip or Smart Credits Skip)
+    const timeLeft = duration - current;
     if (this.skipIntervals?.ed) {
       const { start, end } = this.skipIntervals.ed;
       if (current >= start && current < end) {
@@ -724,17 +830,46 @@ class AnimePlayer {
           this.video.currentTime = end;
           this.app.ui.showToast('⏭️ Auto-skipped Ending!');
         } else {
-          this.skipEndingBtn?.classList.remove('hidden');
+          if (this.skipEndingBtn) {
+            this.skipEndingBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg> Skip Ending';
+            this.skipEndingBtn.classList.remove('hidden');
+          }
         }
       } else {
         this.skipEndingBtn?.classList.add('hidden');
       }
+    } else if (timeLeft <= 90 && timeLeft >= 20 && duration > 450 && (this.currentAnime?.isTv || this.app.currentMode === 'anime')) {
+      if (this.skipEndingBtn) {
+        this.skipEndingBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg> Skip Outro';
+        this.skipEndingBtn.classList.remove('hidden');
+      }
+    } else {
+      this.skipEndingBtn?.classList.add('hidden');
     }
 
     // Prompt next episode near end (last 30 seconds or 95%)
-    const timeLeft = duration - current;
     if ((timeLeft <= 30 || percent >= 95) && !this.nextEpPromptShown && this.currentEpIndex < this.currentAnime.episodes.length - 1) {
       this.showNextEpPrompt(timeLeft);
+    }
+
+    // Sync playback state to Mobile Remote / LAN companion (heartbeat every 800ms)
+    const now = Date.now();
+    if (!this._lastRemoteSync || now - this._lastRemoteSync > 800) {
+      this._lastRemoteSync = now;
+      if (window.api?.sendPlaybackState) {
+        window.api.sendPlaybackState({
+          playing: !this.video.paused,
+          currentTime: current,
+          duration: duration,
+          title: this.titleHeader.textContent || 'AnimeOpen',
+          episodeTitle: this.epHeader.textContent || '',
+          cover: this.currentAnime?.metadata?.cover || (this.currentAnime?.metadata?.localCover ? window.api.getLocalImageUrl(this.currentAnime.metadata.localCover) : ''),
+          volume: this.video.volume,
+          muted: this.video.muted,
+          filePath: this.currentEpisode?.filePath || null,
+          isCinema: this.app.currentMode === 'cinema'
+        });
+      }
     }
   }
 
@@ -928,10 +1063,18 @@ class AnimePlayer {
 
   onEnded() {
     this.saveProgress(true);
+
+    // 1. Check Marathon Queue first!
+    if (this.app.queueManager && this.app.queueManager.hasNext()) {
+      this.app.ui.showToast('⏭️ Playing next item from Marathon Queue...');
+      this.app.queueManager.playNext();
+      return;
+    }
+
     if (this.currentEpIndex < this.currentAnime.episodes.length - 1) {
       this.playNextEpisode();
     } else {
-      this.app.ui.showToast('You finished the last episode of this anime!');
+      this.app.ui.showToast('You finished the last episode of this collection!');
     }
   }
 
@@ -981,6 +1124,10 @@ class AnimePlayer {
       this.video.currentTime = this.skipIntervals.op.end;
       this.skipIntroBtn?.classList.add('hidden');
       this.app.ui.showToast('⏭️ Skipped Opening!');
+    } else {
+      this.video.currentTime = Math.min(this.video.currentTime + 85, this.video.duration - 15);
+      this.skipIntroBtn?.classList.add('hidden');
+      this.app.ui.showToast('⏭️ Skipped Intro (+85s)!');
     }
   }
 
@@ -989,6 +1136,10 @@ class AnimePlayer {
       this.video.currentTime = this.skipIntervals.ed.end;
       this.skipEndingBtn?.classList.add('hidden');
       this.app.ui.showToast('⏭️ Skipped Ending!');
+    } else {
+      this.video.currentTime = Math.max(0, this.video.duration - 2);
+      this.skipEndingBtn?.classList.add('hidden');
+      this.app.ui.showToast('⏭️ Skipped Outro!');
     }
   }
 

@@ -31,6 +31,11 @@ class AnimeApp {
     this.player = new AnimePlayer(this);
     this.ostPlayer = new OSTPlayer();
     this.inAppBrowser = new InAppBrowser(this);
+    this.queueManager = new QueueManager(this);
+    this.trailerModal = new TrailerModal(this);
+    this.jukebox = new AnimeJukebox(this);
+    this.mangaReader = new MangaReader(this);
+    this.remoteModal = new RemoteModal(this);
 
     this.init();
   }
@@ -46,6 +51,7 @@ class AnimeApp {
     this.bindUserGuide();
     this.bindRssModal();
     this.bindLanSharing();
+    this.bindPowerFeatures();
 
     // Local Area Network (LAN) Peer Sharing listeners
     if (window.api?.onLanPeersChanged) {
@@ -433,7 +439,7 @@ class AnimeApp {
     if (this._activeScanToken === scanToken && scanSpinner) {
       scanSpinner.classList.add('hidden');
     }
-    if (window.api?.lanUpdateLibrary) window.api.lanUpdateLibrary(this.animeList);
+    if (window.api?.lanUpdateLibrary) window.api.lanUpdateLibrary([...this.animeList, ...this.cinemaList]);
   }
 
   async fetchMetadataForLibrary(forceRefresh = false, scanToken = this._activeScanToken) {
@@ -653,9 +659,12 @@ class AnimeApp {
     });
 
     const active = this.activeGenre;
-    genreContainer.innerHTML = `<button class="filter-pill ${active === 'ALL' ? 'active' : ''}" data-genre="ALL">All ${this.currentMode === 'cinema' ? 'Genres' : 'Anime'}</button>`;
+    genreContainer.innerHTML = `
+      <button class="filter-pill ${active === 'ALL' ? 'active' : ''}" data-genre="ALL">All ${this.currentMode === 'cinema' ? 'Genres' : 'Anime'}</button>
+      <button class="filter-pill ${active === 'SAGAS' ? 'active' : ''}" data-genre="SAGAS" style="color:#00e5ff;border-color:rgba(0,229,255,0.4);font-weight:700;">🌟 Franchises & Sagas</button>
+    `;
 
-    Array.from(genresSet).sort().slice(0, 12).forEach(genre => {
+    Array.from(genresSet).sort().slice(0, 11).forEach(genre => {
       const btn = document.createElement('button');
       btn.className = `filter-pill ${active === genre ? 'active' : ''}`;
       btn.dataset.genre = genre;
@@ -666,6 +675,14 @@ class AnimeApp {
 
   applyFilters() {
     const sourceList = this.currentMode === 'cinema' ? this.cinemaList : this.animeList;
+
+    // Sagas / Franchises filter
+    if (this.activeGenre === 'SAGAS') {
+      const sagas = SagaManager.detectSagas(sourceList, this.currentMode);
+      this.ui.renderSagasView(sagas);
+      return;
+    }
+
     let result = [...sourceList];
 
     // Search query
@@ -1241,33 +1258,67 @@ class AnimeApp {
     // Process raw files into structured Movies and TV Series
     this.cinemaList = this.processCinemaFiles(result.files, folder);
 
-    // Initial render with titles immediately
+    // Initial render with titles immediately — zero wait!
     this.populateGenreFilters();
     this.applyFilters();
-    this.ui.showToast(`Found ${this.cinemaList.length} movies & shows. Resolving metadata...`);
 
-    // Fetch Cinema metadata
-    await this.fetchMetadataForCinema(forceRefreshMetadata, scanToken);
-
+    // Hide heavy scan spinner immediately so the UI is responsive and movies are instantly clickable!
     if (this._activeScanToken === scanToken && scanSpinner) {
       scanSpinner.classList.add('hidden');
     }
+
+    this.ui.showToast(`Found ${this.cinemaList.length} movies & shows! Resolving artwork...`);
+    if (window.api?.lanUpdateLibrary) window.api.lanUpdateLibrary([...this.animeList, ...this.cinemaList]);
+
+    // Fetch Cinema metadata asynchronously in background without blocking user
+    this.fetchMetadataForCinema(forceRefreshMetadata, scanToken).catch(err => {
+      console.warn('Background cinema metadata error:', err);
+    });
   }
 
   processCinemaFiles(files, baseFolder) {
-    const VIDEO_EXTS = ['.mkv', '.mp4', '.avi', '.webm', '.mov', '.ts'];
-    const videoFiles = files.filter(f => !f.isZipEntry && VIDEO_EXTS.includes(f.extension.toLowerCase()));
+    if (!Array.isArray(files)) return [];
 
+    const VIDEO_EXTS = ['.mkv', '.mp4', '.avi', '.webm', '.mov', '.ts', '.m4v'];
+    const videoFiles = files.filter(f => {
+      const name = f.name || f.fileName || '';
+      const dotIdx = name.lastIndexOf('.');
+      if (dotIdx === -1) return false;
+      const ext = name.slice(dotIdx).toLowerCase();
+      return VIDEO_EXTS.includes(ext);
+    });
+
+    const normBase = (baseFolder || '').replace(/\\/g, '/').replace(/\/$/, '');
     const groups = new Map();
 
     for (const f of videoFiles) {
-      const parsed = CinemaMetadata.parseMediaName(f.fileName);
-      
+      const fileName = f.name || f.fileName || '';
+      const filePath = f.fullPath || f.filePath || '';
+      const normFull = filePath.replace(/\\/g, '/');
+
+      let rel = '';
+      if (normBase && normFull.startsWith(normBase)) {
+        rel = normFull.slice(normBase.length).replace(/^\//, '');
+      } else {
+        rel = fileName;
+      }
+
+      const parts = rel.split('/').filter(Boolean);
+      let topFolder = '';
+      let parentFolder = '';
+
+      if (parts.length > 1) {
+        topFolder = parts[0];
+        parentFolder = parts[parts.length - 2];
+      }
+
+      const parsed = CinemaMetadata.parseMediaName(fileName, parentFolder, topFolder);
+
       let groupKey = '';
       if (parsed.isTv) {
-        groupKey = 'tv_' + parsed.cleanTitle.toLowerCase();
+        groupKey = 'tv_' + parsed.cleanTitle.toLowerCase().replace(/[^a-z0-9]/g, '');
       } else {
-        groupKey = 'movie_' + parsed.cleanTitle.toLowerCase();
+        groupKey = 'movie_' + parsed.cleanTitle.toLowerCase().replace(/[^a-z0-9]/g, '') + (parsed.year ? `_${parsed.year}` : '');
       }
 
       if (!groups.has(groupKey)) {
@@ -1280,6 +1331,7 @@ class AnimeApp {
           year: parsed.year,
           episodes: [],
           lastModified: f.mtime || Date.now(),
+          hasZip: Boolean(f.isZip),
           metadata: null
         });
       }
@@ -1288,15 +1340,20 @@ class AnimeApp {
       if (f.mtime && f.mtime > item.lastModified) {
         item.lastModified = f.mtime;
       }
+      if (f.isZip) item.hasZip = true;
 
       item.episodes.push({
-        filePath: f.filePath,
-        fileName: f.fileName,
-        fileSize: f.size,
-        displayTitle: parsed.isTv ? `Season ${parsed.season} • Episode ${parsed.episode}` : 'Play Movie',
+        id: 'ep_' + Math.abs(filePath.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0)),
+        filePath: filePath,
+        fileName: fileName,
+        fileSize: f.size || 0,
+        isZip: Boolean(f.isZip),
+        zipPath: f.zipPath || null,
+        entryName: f.entryName || null,
+        displayTitle: parsed.isTv ? `Season ${parsed.season} • Episode ${parsed.episode}` : (parsed.year ? `${parsed.cleanTitle} (${parsed.year})` : 'Play Movie'),
         season: parsed.season,
         episode: parsed.episode,
-        mtime: f.mtime
+        mtime: f.mtime || Date.now()
       });
     }
 
@@ -1306,6 +1363,8 @@ class AnimeApp {
           if (a.season !== b.season) return a.season - b.season;
           return a.episode - b.episode;
         });
+      } else {
+        item.episodes.sort((a, b) => a.fileName.localeCompare(b.fileName));
       }
       item.totalEpisodes = item.episodes.length;
     }
@@ -1316,62 +1375,107 @@ class AnimeApp {
   async fetchMetadataForCinema(forceRefresh = false, scanToken = this._activeScanToken) {
     if (!this.store.cachedCinemaMetadata) this.store.cachedCinemaMetadata = {};
 
-    for (let i = 0; i < this.cinemaList.length; i++) {
-      if (this._activeScanToken !== scanToken || this.currentMode !== 'cinema') {
-        const scanSpinner = document.getElementById('scanSpinner');
-        if (scanSpinner) scanSpinner.classList.add('hidden');
-        return;
-      }
-
-      const item = this.cinemaList[i];
+    // Pass 1: Apply cached metadata instantly with zero network delay
+    for (const item of this.cinemaList) {
+      if (this._activeScanToken !== scanToken || this.currentMode !== 'cinema') return;
       const matchKey = item.title.toLowerCase();
-
-      let cached = this.store.cachedCinemaMetadata[matchKey];
+      const cached = this.store.cachedCinemaMetadata[matchKey];
       if (!forceRefresh && cached) {
         item.metadata = cached;
         this.updateCardInDOM(item);
-        continue;
-      }
-
-      try {
-        const meta = await CinemaMetadata.resolveMetadata(item.title, item.isTv, item.year);
-        if (this._activeScanToken !== scanToken || this.currentMode !== 'cinema') {
-          const scanSpinner = document.getElementById('scanSpinner');
-          if (scanSpinner) scanSpinner.classList.add('hidden');
-          return;
-        }
-
-        if (meta) {
-          if (meta.cover && window.api.downloadImageCache) {
-            try {
-              const cacheRes = await window.api.downloadImageCache({
-                url: meta.cover,
-                key: `cinema_${matchKey}`,
-                type: 'cover'
-              });
-              if (cacheRes.success) {
-                meta.localCover = cacheRes.localPath;
-              }
-            } catch (_) {}
-          }
-
-          item.metadata = meta;
-          this.store.cachedCinemaMetadata[matchKey] = meta;
-          await window.api.saveStore(this.store);
-          this.updateCardInDOM(item);
-        }
-      } catch (e) {
-        console.warn(`Cinema metadata resolution failed for ${item.title}:`, e.message);
       }
     }
 
-    if (this._activeScanToken !== scanToken || this.currentMode !== 'cinema') {
-      const scanSpinner = document.getElementById('scanSpinner');
-      if (scanSpinner) scanSpinner.classList.add('hidden');
+    // Pass 2: Identify uncached items that need network resolution
+    const needsFetch = this.cinemaList.filter(item => {
+      const matchKey = item.title.toLowerCase();
+      return forceRefresh || !this.store.cachedCinemaMetadata[matchKey];
+    });
+
+    if (needsFetch.length === 0) {
+      this.populateGenreFilters();
       return;
     }
 
-    this.populateGenreFilters();
+    // Pass 3: Resolve metadata concurrently (3 parallel requests)
+    const CONCURRENCY = 3;
+    let idx = 0;
+    let updatedCount = 0;
+
+    const worker = async () => {
+      while (idx < needsFetch.length) {
+        if (this._activeScanToken !== scanToken || this.currentMode !== 'cinema') return;
+        const currentIdx = idx++;
+        const item = needsFetch[currentIdx];
+        const matchKey = item.title.toLowerCase();
+
+        try {
+          const meta = await CinemaMetadata.resolveMetadata(item.title, item.isTv, item.year);
+          if (this._activeScanToken !== scanToken || this.currentMode !== 'cinema') return;
+
+          if (meta) {
+            item.metadata = meta;
+            this.store.cachedCinemaMetadata[matchKey] = meta;
+            updatedCount++;
+            this.updateCardInDOM(item);
+
+            // Periodically save cache
+            if (updatedCount % 4 === 0) {
+              window.api.saveStore(this.store);
+            }
+          }
+        } catch (e) {
+          console.warn(`Cinema metadata resolution failed for ${item.title}:`, e.message);
+        }
+      }
+    };
+
+    const workers = [];
+    for (let i = 0; i < Math.min(CONCURRENCY, needsFetch.length); i++) {
+      workers.push(worker());
+    }
+
+    await Promise.all(workers);
+
+    if (this._activeScanToken === scanToken && this.currentMode === 'cinema') {
+      await window.api.saveStore(this.store);
+      this.populateGenreFilters();
+    }
+  }
+
+  bindPowerFeatures() {
+    // Mobile Phone Remote Modal
+    document.getElementById('btnOpenMobileRemoteModal')?.addEventListener('click', () => {
+      this.remoteModal.open();
+    });
+
+    // Marathon Queue Modal
+    document.getElementById('btnOpenQueueModal')?.addEventListener('click', () => {
+      this.queueManager.updateUI();
+      document.getElementById('marathonQueueModal')?.classList.remove('hidden');
+    });
+    document.getElementById('btnCloseQueueModal')?.addEventListener('click', () => {
+      document.getElementById('marathonQueueModal')?.classList.add('hidden');
+    });
+    document.getElementById('btnClearQueue')?.addEventListener('click', () => {
+      this.queueManager.clear();
+    });
+    document.getElementById('btnPlayQueueNext')?.addEventListener('click', () => {
+      this.queueManager.playNext();
+    });
+
+    // Theme Jukebox
+    document.getElementById('btnOpenJukeboxModal')?.addEventListener('click', () => {
+      this.jukebox.open();
+    });
+
+    // Hero Banner Trailer
+    document.getElementById('btnHeroTrailer')?.addEventListener('click', () => {
+      const heroAnime = this.ui?.currentHeroAnime || this.animeList[0] || this.cinemaList[0];
+      if (heroAnime) {
+        this.trailerModal.open(heroAnime);
+      }
+    });
   }
 
   bindBatchRenameModal() {
@@ -1914,7 +2018,7 @@ class AnimeApp {
     };
 
     // Open video player directly
-    this.player.playEpisode(anime, lanEpisode);
+    this.player.loadEpisode(anime, lanEpisode);
   }
 
   async downloadLanEpisode(peer, anime, episode, btnEl) {

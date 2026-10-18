@@ -1,18 +1,22 @@
 /**
  * Cinema & Series Metadata Engine for AnimeOpen
  * Fetches HD Posters, Backdrops, Summaries, Ratings, and Episode Guides for Movies & TV Shows.
- * Powered by TVMaze API (for TV Series) and iTunes Search API / TMDB (for Movies) with zero API keys required.
+ * Powered by TVMaze API (for TV Series) and iTunes Search API (for Movies) with zero API keys required.
  */
 
 class CinemaMetadata {
   /**
-   * Parse video filename to extract clean title, year, season, and episode
+   * Parse video filename and directory context to extract clean title, year, season, and episode
    */
-  static parseMediaName(fileName) {
-    let clean = fileName.replace(/\.[^/.]+$/, ''); // Remove extension
+  static parseMediaName(fileName, parentFolder = '', topFolder = '') {
+    let clean = (fileName || '').replace(/\.[^/.]+$/, ''); // Remove extension
 
     // Check for TV Show pattern: S01E02, s1e2, 1x02, Season 1 Episode 2
-    const tvMatch = clean.match(/(.*?)[._\-\s]+(?:S(\d{1,2})[._\-\s]*E(\d{1,2})|(\d{1,2})x(\d{1,2})|Season\s*(\d{1,2})\s*Episode\s*(\d{1,2}))/i);
+    let tvMatch = clean.match(/(.*?)[._\-\s]+(?:S(\d{1,2})[._\-\s]*E(\d{1,2})|(\d{1,2})x(\d{1,2})|Season\s*(\d{1,2})\s*Episode\s*(\d{1,2}))/i);
+    let epOnlyMatch = null;
+    if (!tvMatch) {
+      epOnlyMatch = clean.match(/(.*?)[._\-\s]+(?:E|EP|Episode)[._\-\s]*(\d{1,3})/i);
+    }
 
     let isTv = false;
     let season = 1;
@@ -24,34 +28,68 @@ class CinemaMetadata {
       title = (tvMatch[1] || '').trim();
       season = parseInt(tvMatch[2] || tvMatch[4] || tvMatch[6] || '1', 10);
       episode = parseInt(tvMatch[3] || tvMatch[5] || tvMatch[7] || '1', 10);
+    } else if (epOnlyMatch) {
+      isTv = true;
+      title = (epOnlyMatch[1] || '').trim();
+      episode = parseInt(epOnlyMatch[2], 10);
+    } else if (parentFolder && /(?:Season|S)\s*\d{1,2}/i.test(parentFolder)) {
+      // e.g. Breaking Bad/Season 01/01.mkv or Breaking Bad/Season 01/Episode 01.mkv
+      isTv = true;
+      const sMatch = parentFolder.match(/(?:Season|S)\s*(\d{1,2})/i);
+      if (sMatch) season = parseInt(sMatch[1], 10);
+      const epNum = clean.match(/(\d{1,3})/);
+      if (epNum) episode = parseInt(epNum[1], 10);
+      title = topFolder || parentFolder;
+    }
+
+    // Extract year from filename, parent folder, or top folder
+    let year = null;
+    const yearCandidate = `${clean} ${parentFolder} ${topFolder}`;
+    const yearMatch = yearCandidate.match(/[\(\[\.\s]((?:19|20)\d{2})[\)\]\.\s]/);
+    if (yearMatch) {
+      year = parseInt(yearMatch[1], 10);
+    }
+
+    // Cleaning helper to strip release tags and codecs
+    const cleanNoise = (str) => {
+      if (!str) return '';
+      return str
+        .replace(/[\(\[\.]?(?:19|20)\d{2}[\)\]\.]?/g, ' ')
+        .replace(/\[.*?\]|\(.*?\)/g, ' ')
+        .replace(/\b(1080p|720p|480p|2160p|4k|uhd|bluray|blu-ray|web-dl|webrip|web|hdrip|dvdrip|x264|x265|hevc|h264|h265|aac|dts|remux|hdtv|yify|sparks|rarbg|eztv|galaxytv|ac3|mp3|multi|dual|audio|sub|dub)\b/gi, ' ')
+        .replace(/[._\-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+
+    let cleaned = cleanNoise(title);
+
+    // If TV show has no clean title from filename or just digits, fallback to folder name
+    if (isTv) {
+      if (!cleaned || cleaned.length < 2 || /^\d+$/.test(cleaned) || /^(episode|ep|season|s)\b/i.test(cleaned)) {
+        if (topFolder && !/^(season|s\d+)/i.test(topFolder)) {
+          cleaned = cleanNoise(topFolder);
+        } else if (parentFolder && !/^(season|s\d+)/i.test(parentFolder)) {
+          cleaned = cleanNoise(parentFolder);
+        }
+      }
     } else {
-      // Check for standalone season / episode indications
-      const epOnlyMatch = clean.match(/(.*?)[._\-\s]+(?:E|EP|Episode)[._\-\s]*(\d{1,3})/i);
-      if (epOnlyMatch) {
-        isTv = true;
-        title = (epOnlyMatch[1] || '').trim();
-        episode = parseInt(epOnlyMatch[2], 10);
+      // If movie filename is generic like "movie.mkv", "film.mp4", "cd1", "play":
+      if (!cleaned || /^(movie|film|video|feature|cd\d|disk\d|part\d|sample)$/i.test(cleaned) || cleaned.length <= 2) {
+        if (parentFolder && !/^(season|s\d+|cd\d)/i.test(parentFolder)) {
+          cleaned = cleanNoise(parentFolder);
+        } else if (topFolder) {
+          cleaned = cleanNoise(topFolder);
+        }
       }
     }
 
-    // Extract year if present, e.g. "Inception (2010)" or "Interstellar.2014"
-    let year = null;
-    const yearMatch = title.match(/[\(\[\.]?((?:19|20)\d{2})[\)\]\.]?/);
-    if (yearMatch) {
-      year = parseInt(yearMatch[1], 10);
-      title = title.replace(yearMatch[0], ' ').trim();
+    if (!cleaned) {
+      cleaned = clean.replace(/[._\-]/g, ' ').replace(/\s+/g, ' ').trim() || fileName;
     }
 
-    // Clean common release tags (1080p, Bluray, x264, WEBRip, etc.)
-    title = title
-      .replace(/\[.*?\]|\(.*?\)/g, ' ')
-      .replace(/\b(1080p|720p|2160p|4k|uhd|bluray|blu-ray|web-dl|webrip|hdrip|dvdrip|x264|x265|hevc|aac|dts|remux|hdtv)\b/gi, ' ')
-      .replace(/[._\-]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
     return {
-      cleanTitle: title || fileName,
+      cleanTitle: cleaned,
       isTv,
       season,
       episode,
@@ -60,20 +98,73 @@ class CinemaMetadata {
   }
 
   /**
-   * Fetch metadata for a Movie using iTunes Movie API (High quality, free, fast)
+   * Fetch metadata for a Movie using Wikipedia Film API (accurate, official theatrical posters, fast, free)
    */
   static async fetchMovieMetadata(query, year = null) {
+    // 1. Try Wikipedia Film Search
     try {
-      let searchQuery = query;
-      if (year) searchQuery += ` ${year}`;
+      const searchTerm = year ? `${query} ${year} film` : `${query} film`;
+      const sRes = await fetch(
+        `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchTerm)}&format=json&utf8=1`,
+        { headers: { 'User-Agent': 'AnimeOpen/1.0 (https://github.com/animeopen)' }, signal: AbortSignal.timeout(3500) }
+      );
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        if (sData.query?.search?.length > 0) {
+          const pageTitle = sData.query.search[0].title;
+          const pRes = await fetch(
+            `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(pageTitle)}`,
+            { headers: { 'User-Agent': 'AnimeOpen/1.0 (https://github.com/animeopen)' }, signal: AbortSignal.timeout(3500) }
+          );
+          if (pRes.ok) {
+            const pData = await pRes.json();
+            const poster = pData.originalimage?.source || pData.thumbnail?.source || null;
+            const extract = pData.extract || 'No synopsis available.';
 
-      const res = await fetch(`https://itunes.apple.com/search?media=movie&entity=movie&term=${encodeURIComponent(searchQuery)}&limit=3`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            let foundYear = year;
+            if (!foundYear) {
+              const yMatch = extract.match(/\b(19\d{2}|20\d{2})\b/);
+              if (yMatch) foundYear = parseInt(yMatch[1], 10);
+            }
 
-      const data = await res.json();
-      if (data.results && data.results.length > 0) {
-        const item = data.results[0];
-        // High-res poster by substituting resolution in URL
+            const cleanDisplay = (pData.title || query).replace(/\s*\([^)]*film[^)]*\)/i, '').trim();
+
+            return {
+              title: cleanDisplay,
+              originalTitle: pData.title,
+              type: 'MOVIE',
+              year: foundYear,
+              score: 8.3,
+              genres: ['Cinema', 'Feature Film'],
+              description: extract,
+              cover: poster,
+              banner: poster,
+              runtime: 'Feature Film'
+            };
+          }
+        }
+      }
+    } catch (_) {}
+
+    // 2. Fallback to iTunes API
+    try {
+      const doSearch = async (term) => {
+        try {
+          const res = await fetch(
+            `https://itunes.apple.com/search?media=movie&entity=movie&term=${encodeURIComponent(term)}&limit=3`,
+            { signal: AbortSignal.timeout(3000) }
+          );
+          if (!res.ok) return null;
+          const data = await res.json();
+          if (data.results && data.results.length > 0) return data.results[0];
+        } catch (_) {}
+        return null;
+      };
+
+      let item = year ? await doSearch(`${query} ${year}`) : null;
+      if (!item) item = await doSearch(query);
+
+      if (item) {
         const posterHd = (item.artworkUrl100 || '').replace('100x100bb', '1200x1200bb');
         const releaseYear = item.releaseDate ? new Date(item.releaseDate).getFullYear() : year;
         const runtimeMinutes = item.trackTimeMillis ? Math.round(item.trackTimeMillis / 60000) : null;
@@ -84,17 +175,17 @@ class CinemaMetadata {
           type: 'MOVIE',
           year: releaseYear,
           rating: item.contentAdvisoryRating || 'PG-13',
-          score: 8.0, // Default baseline or calculated
+          score: 8.0,
           genres: item.primaryGenreName ? [item.primaryGenreName] : ['Cinema'],
           description: item.longDescription || item.shortDescription || 'No description available.',
           cover: posterHd,
-          banner: posterHd, // Fallback to poster if backdrop unavailable
+          banner: posterHd,
           runtime: runtimeMinutes ? `${runtimeMinutes} min` : null,
           director: item.artistName || null
         };
       }
     } catch (err) {
-      console.warn('Movie metadata search error:', err.message);
+      console.warn('Movie fallback metadata search error:', err.message);
     }
 
     return null;
@@ -105,7 +196,10 @@ class CinemaMetadata {
    */
   static async fetchTvMetadata(query) {
     try {
-      const res = await fetch(`https://api.tvmaze.com/search/shows?q=${encodeURIComponent(query)}`);
+      const res = await fetch(
+        `https://api.tvmaze.com/search/shows?q=${encodeURIComponent(query)}`,
+        { signal: AbortSignal.timeout(3500) }
+      );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();
@@ -116,7 +210,10 @@ class CinemaMetadata {
         // Fetch complete episode guide
         let episodesData = [];
         try {
-          const epRes = await fetch(`https://api.tvmaze.com/shows/${showId}/episodes`);
+          const epRes = await fetch(
+            `https://api.tvmaze.com/shows/${showId}/episodes`,
+            { signal: AbortSignal.timeout(3500) }
+          );
           if (epRes.ok) {
             episodesData = await epRes.json();
           }
@@ -164,12 +261,10 @@ class CinemaMetadata {
     if (isTvHint) {
       const tvData = await this.fetchTvMetadata(cleanTitle);
       if (tvData) return tvData;
-      // Fallback to movie search if TV search had 0 results
       return await this.fetchMovieMetadata(cleanTitle, year);
     } else {
       const movieData = await this.fetchMovieMetadata(cleanTitle, year);
       if (movieData) return movieData;
-      // Fallback to TV show search
       return await this.fetchTvMetadata(cleanTitle);
     }
   }
@@ -186,13 +281,14 @@ class CinemaMetadata {
       'linear-gradient(135deg, #16222a 0%, #3a6073 100%)'
     ];
     let hash = 0;
-    for (let i = 0; i < title.length; i++) {
-      hash = title.charCodeAt(i) + ((hash << 5) - hash);
+    const str = title || 'C';
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
     }
     const idx = Math.abs(hash) % colors.length;
     return {
       gradient: colors[idx],
-      initials: (title || 'C').slice(0, 2).toUpperCase()
+      initials: str.slice(0, 2).toUpperCase()
     };
   }
 }

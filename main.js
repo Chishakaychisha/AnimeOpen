@@ -397,6 +397,17 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+
+  if (!lanService) {
+    lanService = new LanService({
+      mainWindow,
+      storeGetter: loadStore,
+      storeSetter: saveStore
+    });
+    lanService.start().catch(err => console.warn('LAN start error:', err));
+  } else {
+    lanService.setMainWindow(mainWindow);
+  }
 }
 
 let torrentClient = null;
@@ -1682,6 +1693,63 @@ ipcMain.handle('lan:cancel-download', (event, id) => {
 ipcMain.handle('lan:connect-manual', async (event, { ip, port }) => {
   return lanService ? await lanService.connectManual(ip, port) : { success: false, error: 'LAN service inactive' };
 });
+
+ipcMain.handle('lan:get-remote-url', () => {
+  if (lanService) {
+    return {
+      url: `http://${lanService.myIp}:${lanService.httpPort}/remote`,
+      ip: lanService.myIp,
+      port: lanService.httpPort
+    };
+  }
+  return null;
+});
+
+ipcMain.on('player:state-update', (event, state) => {
+  if (lanService) {
+    lanService.updatePlaybackState(state);
+  }
+});
+
+// YouTube Video & Trailer Search via Main Process (No CORS restrictions)
+ipcMain.handle('youtube:search-video', async (event, query) => {
+  if (!query || typeof query !== 'string') return { success: false, error: 'Empty query' };
+  try {
+    const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query.trim())}`;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
+    });
+    if (!res.ok) return { success: false, error: `YouTube returned ${res.status}` };
+    const html = await res.text();
+    const regex = /"videoId":"([a-zA-Z0-9_-]{11})"/g;
+    const matches = [];
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+      if (!matches.includes(match[1])) matches.push(match[1]);
+      if (matches.length >= 6) break;
+    }
+    if (matches.length > 0) {
+      return { success: true, videoId: matches[0], videoIds: matches };
+    }
+    // Fallback regex
+    const regex2 = /\/watch\?v=([a-zA-Z0-9_-]{11})/g;
+    while ((match = regex2.exec(html)) !== null) {
+      if (!matches.includes(match[1])) matches.push(match[1]);
+      if (matches.length >= 6) break;
+    }
+    if (matches.length > 0) {
+      return { success: true, videoId: matches[0], videoIds: matches };
+    }
+    return { success: false, error: 'No video IDs found' };
+  } catch (err) {
+    console.warn('[YouTube Search] Failed for query:', query, err.message);
+    return { success: false, error: err.message };
+  }
+});
+
 
 
 

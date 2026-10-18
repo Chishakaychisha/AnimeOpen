@@ -118,6 +118,31 @@
             <span class="lan-count-badge hidden" id="lanPeersBadge">0</span>
           </button>
 
+          <!-- Mobile Phone Remote Button -->
+          <button class="btn-secondary" id="btnOpenMobileRemoteModal" title="📱 Control playback from your couch with your Phone or Tablet">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/>
+            </svg>
+            <span>Remote</span>
+          </button>
+
+          <!-- Marathon Queue Button -->
+          <button class="btn-secondary" id="btnOpenQueueModal" title="📺 Binge Marathon Queue">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/>
+            </svg>
+            <span>Queue</span>
+            <span class="lan-count-badge hidden" id="marathonQueueBadge">0</span>
+          </button>
+
+          <!-- Theme Songs Jukebox Button -->
+          <button class="btn-secondary" id="btnOpenJukeboxModal" title="🎵 OP/ED Anime Music Vault & Jukebox">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+            </svg>
+            <span>Jukebox</span>
+          </button>
+
           <div class="sort-selector">
             <label for="sortSelect">Sort:</label>
             <select id="sortSelect">
@@ -163,6 +188,10 @@
             <button class="btn-hero-info" id="btnHeroInfo" title="View Series Details & Episodes">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
               <span>More Info</span>
+            </button>
+            <button class="btn-hero-info" id="btnHeroTrailer" title="Watch official high-resolution trailer" style="color: #ff3366; border-color: rgba(255, 51, 102, 0.4);">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10 8.64L15.27 12 10 15.36V8.64M8 5v14l11-7L8 5z"/></svg>
+              <span>Trailer</span>
             </button>
           </div>
         </div>
@@ -291,6 +320,16 @@
                 <option value="PLAN_TO_WATCH">📋 Plan to Watch</option>
                 <option value="DROPPED">❌ Dropped</option>
               </select>
+
+              <button class="btn-secondary" id="btnDetailWatchTrailer" title="Watch official high-resolution trailer" style="color: #ff3366; border-color: rgba(255, 51, 102, 0.4);">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M10 8.64L15.27 12 10 15.36V8.64M8 5v14l11-7L8 5z"/></svg>
+                Watch Trailer
+              </button>
+
+              <button class="btn-secondary" id="btnDetailQueueAll" title="Add all to marathon playlist queue">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/></svg>
+                Queue All
+              </button>
 
               <button class="btn-secondary" id="btnDetailOpenFolder" title="Show file in Windows Explorer">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
@@ -1320,12 +1359,147 @@
     </div>
   </div>
 
+  <!-- Mobile Remote Modal -->
+  <div class="modal-overlay hidden" id="mobileRemoteModal">
+    <div class="modal-box remote-modal-box">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-icon">📱</span>
+          <div>
+            <h3>Mobile Phone Remote</h3>
+            <p class="modal-subtitle">Control playback from your couch on the same Wi-Fi</p>
+          </div>
+        </div>
+        <button class="btn-close-modal" id="btnCloseRemoteModal">&times;</button>
+      </div>
+      <div class="modal-body remote-modal-body">
+        <div class="qr-container">
+          <img id="remoteQrCodeImg" class="qr-code-img" src="" alt="Scan QR Code" />
+          <div class="qr-pulse-ring"></div>
+        </div>
+        <div class="remote-instruction">
+          <p>Scan with your phone's camera to open the instant web remote:</p>
+          <div class="remote-url-badge">
+            <span id="remoteUrlText">http://192.168.x.x:58912/remote</span>
+            <button class="btn-copy-url" id="btnCopyRemoteUrl" title="Copy to clipboard">📋 Copy</button>
+          </div>
+        </div>
+        <div class="remote-modal-actions">
+          <button class="btn-secondary" id="btnOpenRemoteExternal">🌐 Test in Web Browser</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Official Trailer Modal -->
+  <div class="modal-overlay hidden" id="trailerModal">
+    <div class="modal-box trailer-modal-box">
+      <div class="modal-header">
+        <h3 id="trailerTitle">🎬 Official Trailer</h3>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button class="btn-secondary" id="btnTrailerExternal" style="font-size:0.8rem;padding:4px 10px;cursor:pointer;" title="Open full trailer on YouTube">▶ Open on YouTube</button>
+          <button class="btn-close-modal" id="btnCloseTrailer">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body trailer-modal-body">
+        <div class="trailer-iframe-wrapper">
+          <iframe id="trailerIframe" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Binge Marathon Queue Modal -->
+  <div class="modal-overlay hidden" id="marathonQueueModal">
+    <div class="modal-box queue-modal-box">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-icon">📺</span>
+          <div>
+            <h3>Binge Marathon Queue</h3>
+            <p class="modal-subtitle">Auto-plays your queued anime, movies, and episodes continuously</p>
+          </div>
+        </div>
+        <button class="btn-close-modal" id="btnCloseQueueModal">&times;</button>
+      </div>
+      <div class="modal-body queue-modal-body">
+        <div class="queue-items-list" id="marathonQueueList"></div>
+      </div>
+      <div class="modal-footer queue-footer">
+        <button class="btn-secondary" id="btnClearQueue">Clear Queue</button>
+        <button class="btn-primary" id="btnPlayQueueNext">▶ Play Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Anime Themes Jukebox Modal -->
+  <div class="modal-overlay hidden" id="jukeboxModal">
+    <div class="modal-box jukebox-modal-box">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-icon">🎵</span>
+          <div>
+            <h3>Theme Vault & Jukebox</h3>
+            <p class="modal-subtitle">Listen to official Opening & Ending themes from your anime collection</p>
+          </div>
+        </div>
+        <button class="btn-close-modal" id="btnCloseJukebox">&times;</button>
+      </div>
+      <div class="modal-body jukebox-modal-body">
+        <div class="jukebox-player-wrap" id="jukeboxPlayer">
+          <div class="jukebox-now-playing" id="jukeboxNowPlaying">Select a theme song below to play</div>
+          <div class="jukebox-iframe-box">
+            <iframe id="jukeboxIframe" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin:4px 0 10px 0;">
+          <input type="text" id="inputJukeboxSearch" placeholder="🔍 Search themes by title, OP/ED, or artist..." style="flex:1;background:rgba(255,255,255,0.06);border:1px solid var(--border-subtle);border-radius:8px;padding:8px 14px;color:#fff;font-size:0.88rem;" />
+        </div>
+        <div class="jukebox-themes-grid" id="jukeboxThemesList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manga Reader Modal -->
+  <div class="manga-reader-overlay hidden" id="mangaReaderModal">
+    <div class="manga-reader-topbar">
+      <div class="manga-reader-title-box">
+        <span style="font-size: 1.3rem;">📖</span>
+        <span class="manga-title" id="mangaTitle">Manga Chapter</span>
+        <span class="manga-page-badge" id="mangaPageIndicator">1 / 1</span>
+      </div>
+      <div class="manga-reader-controls">
+        <div class="mode-btn-group">
+          <button class="manga-ctrl-btn active" id="btnMangaRtl" title="Right-to-Left (Japanese Manga)">🇯🇵 Manga (RTL)</button>
+          <button class="manga-ctrl-btn" id="btnMangaLtr" title="Left-to-Right (Western Comics)">🇺🇸 Comic (LTR)</button>
+          <button class="manga-ctrl-btn" id="btnMangaVertical" title="Continuous Webtoon Vertical Scroll">📜 Webtoon</button>
+        </div>
+        <button class="manga-ctrl-btn" id="btnMangaDual" title="Dual Page Spread">📖 Dual Page</button>
+        <button class="manga-ctrl-btn" id="btnMangaPrev" title="Previous Page">◀ Prev</button>
+        <button class="manga-ctrl-btn" id="btnMangaNext" title="Next Page">Next ▶</button>
+        <button class="btn-close-reader" id="btnCloseManga" title="Close Reader">&times;</button>
+      </div>
+    </div>
+    <div class="manga-reader-body">
+      <div class="manga-canvas" id="mangaCanvas"></div>
+    </div>
+    <div class="manga-reader-bottombar">
+      <input type="range" class="manga-scrubber" id="mangaPageSlider" min="0" max="0" value="0">
+    </div>
+  </div>
+
   <!-- App Toast Notifications -->
   <div id="appToast" class="app-toast"></div>
 
   <!-- Application Scripts -->
   <script src="js/metadata.js"></script>
   <script src="js/cinemaMetadata.js"></script>
+  <script src="js/sagaManager.js"></script>
+  <script src="js/queueManager.js"></script>
+  <script src="js/trailerModal.js"></script>
+  <script src="js/jukebox.js"></script>
+  <script src="js/mangaReader.js"></script>
+  <script src="js/remoteModal.js"></script>
   <script src="js/scanner.js"></script>
   <script src="js/player.js"></script>
   <script src="js/ui.js"></script>

@@ -120,7 +120,17 @@ contextBridge.exposeInMainWorld('api', {
   },
   onLanDownloadCompleted: (callback) => {
     ipcRenderer.on('lan:download-completed', (event, data) => callback(data));
-  }
+  },
+
+  // Mobile Web Remote Controller
+  getLanRemoteUrl: () => ipcRenderer.invoke('lan:get-remote-url'),
+  sendPlaybackState: (state) => ipcRenderer.send('player:state-update', state),
+  onRemoteCommand: (callback) => {
+    ipcRenderer.on('player:remote-command', (event, cmd) => callback(cmd));
+  },
+
+  // YouTube / Trailer Video Search
+  searchYoutubeVideo: (query) => ipcRenderer.invoke('youtube:search-video', query)
 });
 
 
